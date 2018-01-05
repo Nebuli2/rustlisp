@@ -41,21 +41,41 @@
           [(not (func (car lst)) #f)]
           [else (andmap func (cdr lst))]))
 
+;; greater : num num => num
+;; Determines the greater of two numbers.
 (define (greater a b)
     (if (> b a)
         b
         a))
 
+;; lesser : num num => num
+;; Determines the lesser of two numbers.
 (define (lesser a b)
     (if (> a b)
         b
         a))
 
+;; max : [num] => num
+;; Determines the maximum of the specified list of numbers.
 (define (max lst)
     (foldr greater -infinity lst))
 
+;; min : [num] => num
+;; Determines the minimum of the specified list of numbers.
 (define (min lst)
     (foldr lesser infinity lst))
 
+;; sum : [num] => num
+;; Determines the sum of the specified list of numbers.
 (define (sum lst)
     (foldr + 0 lst))
+
+;; first : [A] => A
+;; Produces the first element of the specified list.
+(define (first lst)
+    (car lst))
+
+;; rest : [A] => [A]
+;; Produces the rest of the list after the first element.
+(define (rest lst)
+    (cdr lst))
