@@ -64,6 +64,8 @@ impl Intrinsics for Environment {
         self.define_intrinsic("*", functions::_mul);
         self.define_intrinsic("/", functions::_div);
         self.define_intrinsic("modulo", functions::_modulo);
+        self.define_intrinsic("sqrt", functions::_sqrt);
+        self.define_intrinsic("pow", functions::_pow);
 
         // Type checking functions
         self.define_intrinsic("num?", functions::_is_num);
@@ -534,6 +536,39 @@ mod functions {
             match (a, b) {
                 (&Num(a), &Num(b)) => ok(a % b),
                 _ => Err(format!("\"modulo\" must be passed nums."))
+            }
+        }
+    }
+
+    /// `sqrt : num -> num`
+    /// 
+    /// Produces the square root of the specified num.
+    pub fn _sqrt(_: Env, args: Args) -> Output {
+        let len = args.len();
+        if len != 1 {
+            Err(arity_exact(1, len))
+        } else {
+            let a = &args[0];
+            match *a {
+                Num(a) => ok(f64::sqrt(a)),
+                _ => Err(format!("\"sqrt\" must be passed a num."))
+            }
+        }
+    }
+
+    /// `pow : num num -> num`
+    /// 
+    /// Produces the num equal to the first num raised to the power of the
+    /// second num.
+    pub fn _pow(_: Env, args: Args) -> Output {
+        let len = args.len();
+        if len != 2 {
+            Err(arity_exact(2, len))
+        } else {
+            let (a, b) = (&args[0], &args[1]);
+            match (a, b) {
+                (&Num(a), &Num(b)) => ok(f64::powf(a, b)),
+                _ => Err(format!("\"pow\" must be passed nums."))
             }
         }
     }
