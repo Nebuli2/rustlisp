@@ -403,7 +403,7 @@ mod functions {
             1 => {
                 let code = &args[0];
                 match code {
-                    &Value::Num(n) => n as i32,
+                    &Num(n) => n as i32,
                     _ => return Err(not_a_number(code))
                 }
             }
@@ -443,7 +443,7 @@ mod functions {
         let mut sum = 0.0;
         for arg in args.iter() {
             match arg {
-                &Value::Num(num) => sum += num,
+                &Num(num) => sum += num,
                 _ => return Err(not_a_number(arg))
             }
         }
@@ -459,14 +459,14 @@ mod functions {
         if len > 0 {
             let first = &args[0];
             match first {
-                &Value::Num(n) => {
+                &Num(n) => {
                     if len == 1 {
-                        Ok(Value::Num(-n))
+                        Ok(Num(-n))
                     } else {
                         let mut acc = n;
                         for arg in &args[1..] {
                             match arg {
-                                &Value::Num(num) => acc -= num,
+                                &Num(num) => acc -= num,
                                 _ => return Err(not_a_number(arg))
                             }
                         }
@@ -487,7 +487,7 @@ mod functions {
         let mut prod = 1.0;
         for arg in args.iter() {
             match arg {
-                &Value::Num(num) => prod *= num,
+                &Num(num) => prod *= num,
                 _ => return Err(not_a_number(arg))
             }
         }
@@ -503,14 +503,14 @@ mod functions {
         if len > 0 {
             let first = &args[0];
             match first {
-                &Value::Num(n) => {
+                &Num(n) => {
                     if len == 1 {
-                        Ok(Value::Num(1.0 / n))
+                        Ok(Num(1.0 / n))
                     } else {
                         let mut acc = n;
                         for arg in &args[1..] {
                             match arg {
-                                &Value::Num(num) => acc /= num,
+                                &Num(num) => acc /= num,
                                 _ => return Err(not_a_number(arg))
                             }
                         }
@@ -544,8 +544,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let a = &args[0];
-        match *a {
-            Num(a) => ok(f64::sqrt(a)),
+        match a {
+            &Num(a) => ok(f64::sqrt(a)),
             _ => Err(format!("\"sqrt\" must be passed a num."))
         }
     }
@@ -571,8 +571,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            Num(_) => ok(true),
+        match arg {
+            &Num(_) => ok(true),
             _ => ok(false)
         }
     }
@@ -584,8 +584,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            Bool(_) => ok(true),
+        match arg {
+            &Bool(_) => ok(true),
             _ => ok(false)
         }
     }
@@ -597,8 +597,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            Str(_) => ok(true),
+        match arg {
+            &Str(_) => ok(true),
             _ => ok(false)
         }
     }
@@ -610,8 +610,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            List(_) => ok(true),
+        match arg {
+            &List(_) => ok(true),
             _ => ok(false)
         }
     }
@@ -623,9 +623,9 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            Intrinsic(_) => ok(true),
-            Func(_, _) => ok(true),
+        match arg {
+            &Intrinsic(_) => ok(true),
+            &Func(_, _) => ok(true),
             _ => ok(false)
         }
     }
@@ -668,8 +668,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let list = &args[0];
-        match *list {
-            List(ref vals) => {
+        match list {
+            &List(ref vals) => {
                 let len = vals.len();
                 if len == 0 {
                     Err(format!("Cannot call car on an empty list."))
@@ -688,8 +688,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let list = &args[0];
-        match *list {
-            List(ref vals) => {
+        match list {
+            &List(ref vals) => {
                 let len = vals.len();
                 if len == 0 {
                     Err(format!("Cannot call cdr on an empty list."))
@@ -714,8 +714,8 @@ mod functions {
         check_arity(1, args.len())?;
 
         let list = &args[0];
-        match *list {
-            List(ref vals) => ok(vals.len() as f64),
+        match list {
+            &List(ref vals) => ok(vals.len() as f64),
             _ => Err(format!("{} is not a list.", list))
         }
     }
@@ -837,12 +837,14 @@ mod functions {
         check_arity(1, args.len())?;
 
         let arg = &args[0];
-        match *arg {
-            Bool(b) => ok(!b),
+        match arg {
+            &Bool(b) => ok(!b),
             _ => Err(format!("{} is not a bool.", arg))
         }
     }
 
+    /// Produces an error if the number of arguments found doesn't match the
+    /// number of arguments expected.
     fn check_arity(expected: usize, found: usize) -> Output {
         if found != expected {
             Err(arity_exact(expected, found))
