@@ -669,7 +669,7 @@ mod functions {
 
         let list = &args[0];
         match *list {
-            Value::List(ref vals) => {
+            List(ref vals) => {
                 let len = vals.len();
                 if len == 0 {
                     Err(format!("Cannot call car on an empty list."))
@@ -689,7 +689,7 @@ mod functions {
 
         let list = &args[0];
         match *list {
-            Value::List(ref vals) => {
+            List(ref vals) => {
                 let len = vals.len();
                 if len == 0 {
                     Err(format!("Cannot call cdr on an empty list."))
@@ -700,7 +700,7 @@ mod functions {
                         new_list.push(value.clone());
                     }
 
-                    Ok(Value::List(new_list))
+                    Ok(List(new_list))
                 }
             },
             _ => Err(format!("{} is not a list.", list))
@@ -715,7 +715,7 @@ mod functions {
 
         let list = &args[0];
         match *list {
-            Value::List(ref vals) => ok(vals.len() as f64),
+            List(ref vals) => ok(vals.len() as f64),
             _ => Err(format!("{} is not a list.", list))
         }
     }
@@ -835,7 +835,7 @@ mod functions {
     /// Inverts the specified boolean value.
     pub fn _not(_: Env, args: Args) -> Output {
         check_arity(1, args.len())?;
-        
+
         let arg = &args[0];
         match *arg {
             Bool(b) => ok(!b),
