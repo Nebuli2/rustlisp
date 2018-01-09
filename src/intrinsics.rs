@@ -528,15 +528,12 @@ mod functions {
     /// 
     /// Produces the modulo of the two specified nums.
     pub fn _modulo(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            Err(arity_exact(2, len))
-        } else {
-            let (a, b) = (&args[0], &args[1]);
-            match (a, b) {
-                (&Num(a), &Num(b)) => ok(a % b),
-                _ => Err(format!("\"modulo\" must be passed nums."))
-            }
+        check_arity(2, args.len())?;
+
+        let (a, b) = (&args[0], &args[1]);
+        match (a, b) {
+            (&Num(a), &Num(b)) => ok(a % b),
+            _ => Err(format!("\"modulo\" must be passed nums."))
         }
     }
 
@@ -544,15 +541,12 @@ mod functions {
     /// 
     /// Produces the square root of the specified num.
     pub fn _sqrt(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            Err(arity_exact(1, len))
-        } else {
-            let a = &args[0];
-            match *a {
-                Num(a) => ok(f64::sqrt(a)),
-                _ => Err(format!("\"sqrt\" must be passed a num."))
-            }
+        check_arity(1, args.len())?;
+
+        let a = &args[0];
+        match *a {
+            Num(a) => ok(f64::sqrt(a)),
+            _ => Err(format!("\"sqrt\" must be passed a num."))
         }
     }
 
@@ -561,15 +555,12 @@ mod functions {
     /// Produces the num equal to the first num raised to the power of the
     /// second num.
     pub fn _pow(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            Err(arity_exact(2, len))
-        } else {
-            let (a, b) = (&args[0], &args[1]);
-            match (a, b) {
-                (&Num(a), &Num(b)) => ok(f64::powf(a, b)),
-                _ => Err(format!("\"pow\" must be passed nums."))
-            }
+        check_arity(2, args.len())?;
+
+        let args = (&args[0], &args[1]);
+        match args {
+            (&Num(a), &Num(b)) => ok(f64::powf(a, b)),
+            _ => Err(format!("\"pow\" must be passed nums."))
         }
     }
 
@@ -577,10 +568,7 @@ mod functions {
     /// 
     /// Determines whether or not the specified value is a num.
     pub fn _is_num(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let arg = &args[0];
         match *arg {
@@ -593,10 +581,7 @@ mod functions {
     /// 
     /// Determines whether or not the specified value is a bool.
     pub fn _is_bool(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let arg = &args[0];
         match *arg {
@@ -609,10 +594,7 @@ mod functions {
     /// 
     /// Determines whether or not the specified value is a str.
     pub fn _is_str(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let arg = &args[0];
         match *arg {
@@ -625,10 +607,7 @@ mod functions {
     /// 
     /// Determines whether or not the specified value is a list.
     pub fn _is_cons(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let arg = &args[0];
         match *arg {
@@ -641,10 +620,7 @@ mod functions {
     /// 
     /// Determines whether or not the specified value is a function.
     pub fn _is_lambda(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let arg = &args[0];
         match *arg {
@@ -666,10 +642,7 @@ mod functions {
     /// Produces a list equal to the specified list prepended by the specified
     /// value.
     pub fn _cons(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }
+        check_arity(2, args.len())?;
 
         let (car, cdr) = (&args[0], &args[1]);
         match (car, cdr) {
@@ -692,33 +665,27 @@ mod functions {
     /// 
     /// Produces the first element of the specified list.
     pub fn _car(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            Err(arity_exact(1, len))
-        } else {
-            let list = &args[0];
-            match *list {
-                Value::List(ref vals) => {
-                    let len = vals.len();
-                    if len == 0 {
-                        Err(format!("Cannot call car on an empty list."))
-                    } else {
-                        ok(vals[0].clone())
-                    }
-                },
-                _ => Err(format!("{} is not a list.", list))
-            }
+        check_arity(1, args.len())?;
+
+        let list = &args[0];
+        match *list {
+            Value::List(ref vals) => {
+                let len = vals.len();
+                if len == 0 {
+                    Err(format!("Cannot call car on an empty list."))
+                } else {
+                    ok(vals[0].clone())
+                }
+            },
+            _ => Err(format!("{} is not a list.", list))
         }
-    }
+}
 
     /// `cdr : [A] -> A`
     /// 
     /// Produces the rest of the specified list after the first element.
     pub fn _cdr(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let list = &args[0];
         match *list {
@@ -744,10 +711,7 @@ mod functions {
     /// 
     /// Determines the length of the specified list.
     pub fn _len(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            return Err(arity_exact(1, len));
-        }
+        check_arity(1, args.len())?;
 
         let list = &args[0];
         match *list {
@@ -761,10 +725,7 @@ mod functions {
     /// Determines whether or not the first argument is less than the second
     /// argument.
     pub fn _is_l(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }
+        check_arity(2, args.len())?;
 
         let (a, b) = (&args[0], &args[1]);
         let cmp = cmp(a, b);
@@ -779,10 +740,7 @@ mod functions {
     /// Determines whether or not the first argument is less than or equal to
     /// the second argument.
     pub fn _is_le(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }
+        check_arity(2, args.len())?;
 
         let (a, b) = (&args[0], &args[1]);
         let cmp = cmp(a, b);
@@ -797,10 +755,7 @@ mod functions {
     /// Determines whether or not the first argument is greater than the second
     /// argument.
     pub fn _is_g(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }
+        check_arity(2, args.len())?;
 
         let (a, b) = (&args[0], &args[1]);
         let cmp = cmp(a, b);
@@ -815,10 +770,7 @@ mod functions {
     /// Determines whether or not the first argument is greater than or equal
     /// to the second argument.
     pub fn _is_ge(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }
+        check_arity(2, args.len())?;
 
         let (a, b) = (&args[0], &args[1]);
         let cmp = cmp(a, b);
@@ -833,10 +785,8 @@ mod functions {
     /// Determines whether or not the two specified values are equal to one
     /// another.
     pub fn _is_eq(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            return Err(arity_exact(2, len));
-        }   
+        check_arity(2, args.len())?; 
+
         let (a, b) = (&args[0], &args[1]);
         ok(a == b)
     }
@@ -845,14 +795,11 @@ mod functions {
     /// 
     /// Produces the logical `or` of the two boolean values.
     pub fn _or(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            Err(arity_exact(2, len))
-        } else {
-            match (&args[0], &args[1]) {
-                (&Bool(a), &Bool(b)) => ok(a || b),
-                _ => Err(format!("\"or\" may only be called on bool values."))
-            }
+        check_arity(2, args.len())?;
+
+        match (&args[0], &args[1]) {
+            (&Bool(a), &Bool(b)) => ok(a || b),
+            _ => Err(format!("\"or\" may only be called on bool values."))
         }
     }
 
@@ -860,14 +807,11 @@ mod functions {
     /// 
     /// Produces the logical `and` of the two boolean values.
     pub fn _and(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            Err(arity_exact(2, len))
-        } else {
-            match (&args[0], &args[1]) {
-                (&Bool(a), &Bool(b)) => ok(a && b),
-                _ => Err(format!("\"and\" may only be called on bool values."))
-            }
+        check_arity(2, args.len())?;
+
+        match (&args[0], &args[1]) {
+            (&Bool(a), &Bool(b)) => ok(a && b),
+            _ => Err(format!("\"and\" may only be called on bool values."))
         }
     }
 
@@ -876,16 +820,13 @@ mod functions {
     /// Expands the specified list of values into a variadic input for the
     /// specified function, producing that function's output.
     pub fn _apply(env: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 2 {
-            Err(arity_exact(2, len))
-        } else {
-            let (func, args) = (&args[0], &args[1]);
-            match (func, args) {
-                (&Func(_, _), &List(ref list)) => eval_func(func, &list, env),
-                (&Intrinsic(func), &List(ref list)) => func(env, list),
-                _ => Err(format!("Contract not satisfied: {} {}.", func, args))
-            }
+        check_arity(2, args.len())?;
+
+        let (func, args) = (&args[0], &args[1]);
+        match (func, args) {
+            (&Func(_, _), &List(ref list)) => eval_func(func, &list, env),
+            (&Intrinsic(func), &List(ref list)) => func(env, list),
+            _ => Err(format!("Contract not satisfied: {} {}.", func, args))
         }
     }
 
@@ -893,15 +834,20 @@ mod functions {
     /// 
     /// Inverts the specified boolean value.
     pub fn _not(_: Env, args: Args) -> Output {
-        let len = args.len();
-        if len != 1 {
-            Err(arity_exact(1, len))
+        check_arity(1, args.len())?;
+        
+        let arg = &args[0];
+        match *arg {
+            Bool(b) => ok(!b),
+            _ => Err(format!("{} is not a bool.", arg))
+        }
+    }
+
+    fn check_arity(expected: usize, found: usize) -> Output {
+        if found != expected {
+            Err(arity_exact(expected, found))
         } else {
-            let arg = &args[0];
-            match *arg {
-                Bool(b) => ok(!b),
-                _ => Err(format!("{} is not a bool.", arg))
-            }
+            ok(nil())
         }
     }
 }

@@ -88,3 +88,11 @@
         (begin
             (func (car lst))
             (for-each func (cdr lst)))))
+
+;; fib : num -> num
+(define (fib n)
+    (cond [(< n 0) -1]
+          [(< n 2) n]
+          [else (+ 
+            (fib (- n 1)) 
+            (fib (- n 2)))]))

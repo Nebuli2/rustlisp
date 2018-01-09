@@ -87,11 +87,7 @@ impl Eval for SExpr {
     }
 }
 
-pub fn eval_func(
-    func: &Value, 
-    args: &Vec<Value>, 
-    env: &mut Environment
-) -> Result<Value, String> {
+pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value, String> {
     match *func {
         Value::Func(ref params, ref body) => {
             env.enter_scope();
