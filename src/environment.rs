@@ -32,14 +32,18 @@ impl Environment {
         self.stack.pop().expect("Attempted to exit nonexistent scope.");
     }
 
-    pub fn define<K: Into<String>>(&mut self, key: K, value: Value) {
+    pub fn define<K>(&mut self, key: K, value: Value) 
+        where K: Into<String>
+    {
         let scope = self.cur_scope_mut();
         scope.insert(key.into(), value);
     }
 
-    pub fn get(&self, key: &str) -> Option<&Value> {
+    pub fn get<K>(&self, key: K) -> Option<&Value> 
+        where K: AsRef<str>
+    {
         for scope in self.stack.iter().rev() {
-            if let Some(value) = scope.get(key) {
+            if let Some(value) = scope.get(key.as_ref()) {
                 return Some(value)
             }
         }

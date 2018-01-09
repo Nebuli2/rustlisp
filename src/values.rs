@@ -1,6 +1,8 @@
 use sexpr::*;
 use interpreter::*;
 use std::fmt;
+use std::collections::HashMap;
+use environment::Environment;
 
 #[derive(Clone)]
 pub enum Value {
@@ -9,8 +11,9 @@ pub enum Value {
     Str(String),
     List(Vec<Value>),
     Func(Vec<String>, SExpr),
-    Intrinsic(IntrinsicFunc),
-    Macro(MacroFunc)
+    Intrinsic(Intrinsic),
+    Macro(Macro),
+    Struct(String, HashMap<String, Value>)
 }
 
 impl fmt::Display for Value {
@@ -30,9 +33,9 @@ impl fmt::Display for Value {
             // "string"
             &Str(ref s) => write!(f, "\"{}\"", s),
 
-            // (a b c ...)
+            // '(a b c ...)
             &List(ref exps) => {
-                write!(f, "(")?;
+                write!(f, "'(")?;
                 let len = exps.len();
                 if len > 0 {
                     for i in 0..len - 1 {
@@ -69,6 +72,24 @@ impl fmt::Display for Value {
             // <Macro>
             &Macro(_) => {
                 write!(f, "<Macro>")
+            },
+
+            // { a: b, c: d, e: f }
+            &Struct(_, ref values) => {
+                // Write opening bracket
+                write!(f, "{{")?;
+
+                // Write keys, values in format: key: value
+                let last = values.len() - 1;
+                for (i, (key, value)) in values.iter().enumerate() {
+                    write!(f, "{}: {}", key, value)?;
+                    if i < last {
+                        write!(f, ",")?;
+                    }
+                }
+
+                // Write closing bracket
+                write!(f, "}}")
             }
         }
     }

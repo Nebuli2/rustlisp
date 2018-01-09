@@ -79,3 +79,17 @@
 ;; Produces the rest of the list after the first element.
 (define (rest lst)
     (cdr lst))
+
+(define (fibonacci n)
+    (cond [(< n 0) -1]
+          [(< n 2) n]
+          [else (+ 
+            (fibonacci (- n 1)) 
+            (fibonacci (- n 2)))]))
+
+(define (for-each func lst)
+    (if (empty? lst)
+        empty
+        (begin
+            (func (car lst))
+            (for-each func (cdr lst)))))

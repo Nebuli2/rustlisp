@@ -97,14 +97,12 @@ impl Parser {
     fn parse_ident<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse{
         let mut buf = String::new();
 
-        loop {
-            match self.next_char(r) {
-                Some(c) if c.is_valid_ident() => buf.push(c),
-                Some(c) => {
-                    self.undo_char(c);
-                    break;
-                }
-                None => break
+        while let Some(c) = self.next_char(r) {
+            if c.is_valid_ident() {
+                buf.push(c);
+            } else {
+                self.undo_char(c);
+                break;
             }
         }
 

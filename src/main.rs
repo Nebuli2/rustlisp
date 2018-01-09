@@ -17,12 +17,14 @@ mod errors;
 mod utils;
 mod values;
 use values::*;
-
 mod environment;
 use environment::Environment;
 
 use std::io::{self, BufReader, Error, Write};
 use std::fs::File;
+
+const NAME: &'static str = env!("CARGO_PKG_NAME");
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn read_input_line() -> Result<String, Error> {
     let mut buf = String::new();
@@ -91,5 +93,18 @@ fn main() {
         }
     });
 
+    println!("Welcome to {} v{}.", NAME, VERSION);
     repl(&mut ctx);
+}
+
+fn fib(n: usize) -> usize {
+    let mut fibs = Vec::<usize>::with_capacity(n);
+    fibs[0] = 0;
+    fibs[1] = 1;
+
+    for i in 2..n {
+        fibs[i] = fibs[i - 1] + fibs[i - 2];
+    }
+
+    fibs[n - 1]
 }

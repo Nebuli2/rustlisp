@@ -4,8 +4,9 @@ use sexpr::SExpr;
 use errors::*;
 use environment::Environment;
 
-pub type IntrinsicFunc = fn(env: &mut Environment, &Vec<Value>) -> Result<Value, String>;
-pub type MacroFunc = fn(env: &mut Environment, Vec<SExpr>) -> Result<Value, String>;
+pub type FuncResult = Result<Value, String>;
+pub type Intrinsic = fn(&mut Environment, &[Value]) -> FuncResult;
+pub type Macro = fn(&mut Environment, &[SExpr]) -> FuncResult;
 
 pub fn empty() -> Value {
     Value::List(vec![])
@@ -73,7 +74,7 @@ impl Eval for SExpr {
                             func(ctx, &args)
                         },
                         Value::Macro(ref func) => {
-                            func(ctx, vals.clone())
+                            func(ctx, vals)
                         }
                         _ => Err(not_a_function(&func))
                     }
