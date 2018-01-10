@@ -852,14 +852,13 @@ mod functions {
             ok(nil())
         }
     }
-}
 
-/// Compares the two specified values. If they are numbers, their difference
-/// is returned. Otherwise, `None` is returned.
-fn cmp(a: &Value, b: &Value) -> Option<f64> {
-    use self::Value::*;
-    match (a, b) {
-        (&Num(a), &Num(b)) => Some(a - b),
-        _ => None
+    /// Compares the two specified values. If they are numbers, their difference
+    /// is returned. Otherwise, `None` is returned.
+    fn cmp(a: &Value, b: &Value) -> Option<f64> {
+        match (a, b) {
+            (&Num(a), &Num(b)) => Some(a - b),
+            _ => None
+        }
     }
 }
