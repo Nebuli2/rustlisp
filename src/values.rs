@@ -114,8 +114,16 @@ impl Into<Value> for String {
 }
 
 /// Wrap the specified value in an `Ok`.
-pub fn ok<T: Into<Value>>(val: T) -> Result<Value, String> {
+pub fn ok<T>(val: T) -> Result<Value, String> 
+    where T: Into<Value> 
+{
     Ok(val.into())
+}
+
+pub fn err<T>(msg: T) -> Result<Value, String>
+    where T: Into<String>
+{
+    Err(msg.into())
 }
 
 impl PartialEq for Value {

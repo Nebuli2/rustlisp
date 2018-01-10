@@ -1,5 +1,7 @@
-extern crate ansi_term;
-use ansi_term::Color::*;
+extern crate term_painter;
+use term_painter::ToStyle;
+use term_painter::Color::*;
+use term_painter::Attr::*;
 
 mod parser;
 use parser::Parser;

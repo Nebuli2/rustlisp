@@ -38,7 +38,7 @@
 ;; specified condition. An empty list will always return true.
 (define (andmap func lst)
     (cond [(empty? lst) #t]
-          [(not (func (car lst)) #f)]
+          [(not (func (car lst))) #f]
           [else (andmap func (cdr lst))]))
 
 ;; greater : num num -> num

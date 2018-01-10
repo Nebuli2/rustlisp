@@ -511,16 +511,16 @@ mod functions {
                         for arg in &args[1..] {
                             match arg {
                                 &Num(num) => acc /= num,
-                                _ => return Err(not_a_number(arg))
+                                _ => return err(not_a_number(arg))
                             }
                         }
                         ok(acc)
                     }
                 },
-                _ => Err(not_a_number(first))
+                _ => err(not_a_number(first))
             }
         } else {
-            Err(arity_at_least(2, len))
+            err(arity_at_least(2, len))
         }
     }
 
@@ -533,7 +533,7 @@ mod functions {
         let (a, b) = (&args[0], &args[1]);
         match (a, b) {
             (&Num(a), &Num(b)) => ok(a % b),
-            _ => Err(format!("\"modulo\" must be passed nums."))
+            _ => err("\"modulo\" must be passed nums.")
         }
     }
 
@@ -546,7 +546,7 @@ mod functions {
         let a = &args[0];
         match a {
             &Num(a) => ok(f64::sqrt(a)),
-            _ => Err(format!("\"sqrt\" must be passed a num."))
+            _ =>  err("\"sqrt\" must be passed a num.")
         }
     }
 

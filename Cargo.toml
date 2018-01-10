@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Benjamin Hetherington <b.w.hetherington@gmail.com>"]
 
 [dependencies]
-ansi_term = "0.9"
+term-painter = "0.2.4"
