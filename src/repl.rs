@@ -80,7 +80,7 @@ pub fn run(env: &mut Environment) {
         print_prompt(&prompt).expect("Failed to print prompt.");
         if let Ok(line) = read_input_line() {
             match parse_line(line) {
-                Ok(exprs) => eval_exprs(env, &exprs),
+                Ok(ref exprs) => eval_exprs(env, exprs),
                 Err(why) => print_err(why)
             }
         } else {
