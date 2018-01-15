@@ -1,7 +1,7 @@
 use std::io::{self, BufReader, Error, Write};
 use std::fs::File;
 
-use ansi_term::Color::*;
+use color;
 
 use environment::*;
 use parser::*;
@@ -25,12 +25,12 @@ fn parse_line<S: AsRef<str>>(line: S) -> Result<Vec<SExpr>, String> {
 }
 
 pub fn print_prompt<S: AsRef<str>>(prompt: S) -> io::Result<()> {
-    print!("{}", Blue.bold().paint(prompt.as_ref()));
+    print!("{}", color::prompt(prompt.as_ref()));
     io::stdout().flush()
 }
 
 pub fn print_err<S: AsRef<str>>(why: S) {
-    let err = Red.paint(format!("ERROR: {}", why.as_ref()));
+    let err = color::err(format!("ERROR: {}", why.as_ref()));
     println!("{}", err);
 }
 

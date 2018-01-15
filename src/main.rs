@@ -20,6 +20,8 @@ use values::*;
 mod environment;
 use environment::Environment;
 
+mod color;
+
 mod repl;
 use repl::*;
 
@@ -29,18 +31,7 @@ use std::fs::File;
 const NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-#[cfg(target_os = "windows")]
-fn init() {
-    ansi_term::enable_ansi_support();
-}
-
-#[cfg(not (target_os = "windows"))]
-fn init() {
-    // Do nothing
-}
-
 fn main() {
-    init();
 
     // Create context
     let mut env = Environment::new();
@@ -65,7 +56,7 @@ fn main() {
                 },
                 Err(why) => {
                     let message = format!("ERROR: {}", why);
-                    println!("{}", (message));
+                    println!("{}", color::err(message));
                 }
             }
         }
