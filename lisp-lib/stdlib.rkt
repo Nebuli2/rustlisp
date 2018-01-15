@@ -1,7 +1,10 @@
 ;; empty? : [A] -> bool
 ;; Determines whether or not the specified list is empty or not.
-(define (empty? l)
-    (eq? (len l) 0))
+(define (empty? lst)
+    (eq? (len lst) 0))
+
+(define (last lst)
+    (nth lst (- (len lst) 1)))
 
 ;; foldr : (A B -> A) A [B] -> A
 ;; Performs a right-associative fold on the specified list, with the specified
@@ -23,7 +26,7 @@
 ;; Maps the specified function to the specified list, producing a list
 ;; containing the mapped results.
 (define (map func lst)
-    (foldr (lambda [val lst] (cons (func val) lst) [] lst)))
+    (foldr (lambda [val lst] (cons (func val) lst)) empty lst))
 
 ;; ormap : (A -> bool) [A] -> bool
 ;; Determines whether or not at least one element of the list satisfies the

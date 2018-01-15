@@ -2,7 +2,7 @@ use sexpr::*;
 use interpreter::*;
 use std::fmt;
 use std::collections::HashMap;
-use environment::Environment;
+use ansi_term::Color::*;
 
 #[derive(Clone)]
 pub enum Value {
@@ -21,17 +21,25 @@ impl fmt::Display for Value {
         use self::Value::*;
         match self {
             // num
-            &Num(n) => write!(f, "{}", n),
+            &Num(n) => {
+                let out = n;
+                write!(f, "{}", out)
+            },
 
             // #t | #f
             &Bool(b) => if b {
-                write!(f, "true")
+                let out = "true";
+                write!(f, "{}", out)
             } else {
-                write!(f, "false")
+                let out = "false";
+                write!(f, "{}", out)
             },
 
             // "string"
-            &Str(ref s) => write!(f, "\"{}\"", s),
+            &Str(ref s) => {
+                let out = format!("\"{}\"", s);
+                write!(f, "{}", out)
+            },
 
             // '(a b c ...)
             &List(ref exps) => {

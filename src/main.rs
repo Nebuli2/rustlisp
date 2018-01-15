@@ -1,7 +1,5 @@
-extern crate term_painter;
-use term_painter::ToStyle;
-use term_painter::Color::*;
-use term_painter::Attr::*;
+extern crate ansi_term;
+use ansi_term::Color::*;
 
 mod parser;
 use parser::Parser;
@@ -31,7 +29,19 @@ use std::fs::File;
 const NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+#[cfg(target_os = "windows")]
+fn init() {
+    ansi_term::enable_ansi_support();
+}
+
+#[cfg(not (target_os = "windows"))]
+fn init() {
+    // Do nothing
+}
+
 fn main() {
+    init();
+
     // Create context
     let mut env = Environment::new();
     env.init_intrinsics();
@@ -55,7 +65,7 @@ fn main() {
                 },
                 Err(why) => {
                     let message = format!("ERROR: {}", why);
-                    println!("{}", color::red(message));
+                    println!("{}", (message));
                 }
             }
         }

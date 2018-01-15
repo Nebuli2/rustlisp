@@ -80,6 +80,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("car", functions::_car);
         self.define_intrinsic("cdr", functions::_cdr);
         self.define_intrinsic("len", functions::_len);
+        self.define_intrinsic("nth", functions::_nth);
 
         // Comparison operations
         self.define_intrinsic("<", functions::_is_l);
@@ -315,8 +316,8 @@ mod macros {
             Err(arity_exact(1, len))
         } else {
             let struct_def = &exprs[1];
-            match *struct_def {
-                List(ref vals) => {
+            match struct_def {
+                &List(ref vals) => {
                     let len = vals.len();
                     if len < 1 {
                         Err(arity_exact(1, len))
@@ -511,16 +512,16 @@ mod functions {
                         for arg in &args[1..] {
                             match arg {
                                 &Num(num) => acc /= num,
-                                _ => return err(not_a_number(arg))
+                                _ => return Err(not_a_number(arg))
                             }
                         }
                         ok(acc)
                     }
                 },
-                _ => err(not_a_number(first))
+                _ => Err(not_a_number(first))
             }
         } else {
-            err(arity_at_least(2, len))
+            Err(arity_at_least(2, len))
         }
     }
 
@@ -533,7 +534,7 @@ mod functions {
         let (a, b) = (&args[0], &args[1]);
         match (a, b) {
             (&Num(a), &Num(b)) => ok(a % b),
-            _ => err("\"modulo\" must be passed nums.")
+            _ => Err(format!("\"modulo\" must be passed nums."))
         }
     }
 
@@ -546,7 +547,7 @@ mod functions {
         let a = &args[0];
         match a {
             &Num(a) => ok(f64::sqrt(a)),
-            _ =>  err("\"sqrt\" must be passed a num.")
+            _ => Err(format!("\"sqrt\" must be passed a num."))
         }
     }
 
@@ -720,6 +721,31 @@ mod functions {
         }
     }
 
+    /// `nth : [A] num -> A`
+    /// 
+    /// Produces the nth value of the specified list.
+    pub fn _nth(_: Env, args: Args) -> Output {
+        check_arity(2, args.len())?;
+
+        let (list, index) = (&args[0], &args[1]);
+        match (list, index) {
+            (&List(ref vals), &Num(num)) => {
+                if vals.is_empty() {
+                    return ok(nil());
+                }
+
+                let index = num as usize;
+                let check = index as f64;
+                if check != num {
+                    return err("List index must be an integer.");
+                }
+
+                ok(vals[index].clone())
+            },
+            _ => err("Does not match contract.")
+        }
+    }
+
     /// `< : num num -> bool`
     /// 
     /// Determines whether or not the first argument is less than the second
@@ -809,7 +835,8 @@ mod functions {
     pub fn _and(_: Env, args: Args) -> Output {
         check_arity(2, args.len())?;
 
-        match (&args[0], &args[1]) {
+        let (a, b) = (&args[0], &args[1]);
+        match (a, b) {
             (&Bool(a), &Bool(b)) => ok(a && b),
             _ => Err(format!("\"and\" may only be called on bool values."))
         }

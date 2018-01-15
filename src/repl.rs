@@ -1,5 +1,7 @@
-use std::io::{self, BufReader, Read, Error, Write};
+use std::io::{self, BufReader, Error, Write};
 use std::fs::File;
+
+use ansi_term::Color::*;
 
 use environment::*;
 use parser::*;
@@ -7,32 +9,6 @@ use utils::*;
 use sexpr::*;
 use interpreter::*;
 use values::*;
-
-pub mod color {
-    /// Does nothing to the specified string.
-    #[cfg(target_os = "windows")]
-    pub fn blue<S: Into<String>>(s: S) -> String {
-        s.into()
-    }
-
-    /// Paints the specified string blue.
-    #[cfg(not(target_os = "windows"))]
-    pub fn blue<S: Into<String>>(s: S) -> String {
-        Blue.bold().paint(s.into())
-    }
-
-    /// Does nothing to the specified string.
-    #[cfg(target_os = "windows")]
-    pub fn red<S: Into<String>>(s: S) -> String {
-        s.into()
-    }
-
-    /// Paints the specified string red.
-    #[cfg(not(target_os = "windows"))]
-    pub fn red<S: Into<String>>(s: S) -> String {
-        Red.paint(s.into())
-    }
-}
 
 fn read_input_line() -> Result<String, Error> {
     let mut buf = String::new();
@@ -49,12 +25,12 @@ fn parse_line<S: AsRef<str>>(line: S) -> Result<Vec<SExpr>, String> {
 }
 
 pub fn print_prompt<S: AsRef<str>>(prompt: S) -> io::Result<()> {
-    print!("{}", prompt.as_ref());
+    print!("{}", Blue.bold().paint(prompt.as_ref()));
     io::stdout().flush()
 }
 
 pub fn print_err<S: AsRef<str>>(why: S) {
-    let err = color::red(format!("ERROR: {}", why.as_ref()));
+    let err = Red.paint(format!("ERROR: {}", why.as_ref()));
     println!("{}", err);
 }
 
@@ -75,7 +51,7 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
 
 /// Runs a REPL for the specified environment.
 pub fn run(env: &mut Environment) {
-    let prompt = color::blue(format!("{}> ", user_name()));
+    let prompt = format!("{}> ", user_name());
     loop {
         print_prompt(&prompt).expect("Failed to print prompt.");
         if let Ok(line) = read_input_line() {
