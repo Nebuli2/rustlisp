@@ -123,9 +123,9 @@ mod macros {
         let len = exprs.len();
         if len == 3 {
             let (ident, val) = (&exprs[1], &exprs[2]);
-            match *ident {
+            match ident {
                 // Define variable
-                SExpr::Ident(ref s) => {
+                &Ident(ref s) => {
                     if RESERVED_WORDS.contains(&s.as_str()) {
                         Err(reserved_word(s))
                     } else {
@@ -136,7 +136,7 @@ mod macros {
                 },
 
                 // Define function
-                SExpr::List(ref vals) => {
+                &List(ref vals) => {
                     let len = vals.len();
                     if len == 0 {
                         Err(format!("Cannot redefine empty list."))
@@ -179,8 +179,8 @@ mod macros {
         }
 
         let (params, body) = (&exprs[1], &exprs[2]);
-        match *params {
-            SExpr::List(ref params) => {
+        match params {
+            &List(ref params) => {
                 let mut names = Vec::<String>::with_capacity(params.len());
                 for param in params.iter() {
                     match param {
@@ -227,8 +227,8 @@ mod macros {
         env.enter_scope();
         env.define("else", Value::Bool(true));
         for condition in conditions.iter() {
-            match *condition {
-                SExpr::List(ref vals) => {
+            match condition {
+                &List(ref vals) => {
                     let len = vals.len();
                     match len {
                         2 => {
@@ -275,8 +275,8 @@ mod macros {
             (&List(ref bindings), body) => {
                 env.enter_scope();
                 for expr in bindings.iter() {
-                    match *expr {
-                        List(ref binding) => {
+                    match expr {
+                        &List(ref binding) => {
                             let len = binding.len();
                             if len != 2 {
                                 return Err(arity_exact(2, len));
@@ -326,8 +326,8 @@ mod macros {
 
                         // Check that all values are identifiers
                         for value in vals.iter() {
-                            match *value {
-                                Ident(ref ident) => idents.push(ident.clone()),
+                            match value {
+                                &Ident(ref ident) => idents.push(ident.clone()),
                                 _ => return Err(not_an_identifier(value))
                             }
                         }

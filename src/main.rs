@@ -47,7 +47,7 @@ fn main() {
                 println!("{}", (message));
                 vec![]
             });
-        for expr in parsed.iter() {
+        for expr in &parsed {
             let res = expr.eval(&mut env);
             match res {
                 Ok(val) => match val {
