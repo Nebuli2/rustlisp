@@ -2,7 +2,6 @@ use sexpr::*;
 use interpreter::*;
 use std::fmt;
 use std::collections::HashMap;
-use ansi_term::Color::*;
 
 #[derive(Clone)]
 pub enum Value {
@@ -37,8 +36,7 @@ impl fmt::Display for Value {
 
             // "string"
             &Str(ref s) => {
-                let out = format!("\"{}\"", s);
-                write!(f, "{}", out)
+                write!(f, "{}", s)
             },
 
             // '(a b c ...)

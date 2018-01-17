@@ -28,9 +28,6 @@ use repl::*;
 use std::io::BufReader;
 use std::fs::File;
 
-const NAME: &'static str = env!("CARGO_PKG_NAME");
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-
 fn main() {
 
     // Create context
@@ -62,6 +59,5 @@ fn main() {
         }
     });
 
-    println!("Welcome to {} v{}.", NAME, VERSION);
     run(&mut env);
 }

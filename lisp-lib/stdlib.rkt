@@ -99,3 +99,6 @@
           [else (+ 
             (fib (- n 1)) 
             (fib (- n 2)))]))
+
+;; Greeting
+(print "Welcome to " lisp-name " v" lisp-version ".")

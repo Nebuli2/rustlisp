@@ -5,6 +5,13 @@ use errors::*;
 use values::*;
 use environment::Environment;
 
+/// The name of the lisp interpreter.
+const NAME: &'static str = env!("CARGO_PKG_NAME");
+
+/// The version of the lisp interpreter.
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+/// All reserved words that may not be used as identifiers.
 const RESERVED_WORDS: [&'static str; 6] = [
     "define",
     "begin",
@@ -44,11 +51,17 @@ impl Intrinsics for Environment {
     }
 
     fn init_intrinsics(&mut self) {
+        use values::Value::*;
+
         // Constants
         self.define("empty", nil());
+
         let infinity = ::std::f64::INFINITY;
-        self.define("infinity", Value::Num(infinity));
-        self.define("-infinity", Value::Num(-infinity));
+        self.define("infinity", Num(infinity));
+        self.define("-infinity", Num(-infinity));
+
+        self.define("lisp-version", Str(VERSION.to_string()));
+        self.define("lisp-name", Str(NAME.to_string()));
 
         // Macros
         self.define_macro("define", macros::_define);
@@ -99,6 +112,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("begin", functions::_begin);
         self.define_intrinsic("print", functions::_print);
         self.define_intrinsic("apply", functions::_apply);
+        self.define_intrinsic("concat", functions::_concat);
     }
 }
 
@@ -123,9 +137,9 @@ mod macros {
         let len = exprs.len();
         if len == 3 {
             let (ident, val) = (&exprs[1], &exprs[2]);
-            match ident {
+            match *ident {
                 // Define variable
-                &Ident(ref s) => {
+                SExpr::Ident(ref s) => {
                     if RESERVED_WORDS.contains(&s.as_str()) {
                         Err(reserved_word(s))
                     } else {
@@ -136,7 +150,7 @@ mod macros {
                 },
 
                 // Define function
-                &List(ref vals) => {
+                SExpr::List(ref vals) => {
                     let len = vals.len();
                     if len == 0 {
                         Err(format!("Cannot redefine empty list."))
@@ -172,15 +186,15 @@ mod macros {
     }
 
     /// `(lambda [param1 ...] body)
-    pub fn _lambda(env: Env, exprs: Exprs) -> Output {
+    pub fn _lambda(_: Env, exprs: Exprs) -> Output {
         let len = exprs.len();
         if len != 3 {
             return Err(arity_exact(2, len - 1));
         }
 
         let (params, body) = (&exprs[1], &exprs[2]);
-        match params {
-            &List(ref params) => {
+        match *params {
+            SExpr::List(ref params) => {
                 let mut names = Vec::<String>::with_capacity(params.len());
                 for param in params.iter() {
                     match param {
@@ -227,8 +241,8 @@ mod macros {
         env.enter_scope();
         env.define("else", Value::Bool(true));
         for condition in conditions.iter() {
-            match condition {
-                &List(ref vals) => {
+            match *condition {
+                SExpr::List(ref vals) => {
                     let len = vals.len();
                     match len {
                         2 => {
@@ -275,8 +289,8 @@ mod macros {
             (&List(ref bindings), body) => {
                 env.enter_scope();
                 for expr in bindings.iter() {
-                    match expr {
-                        &List(ref binding) => {
+                    match *expr {
+                        List(ref binding) => {
                             let len = binding.len();
                             if len != 2 {
                                 return Err(arity_exact(2, len));
@@ -326,8 +340,8 @@ mod macros {
 
                         // Check that all values are identifiers
                         for value in vals.iter() {
-                            match value {
-                                &Ident(ref ident) => idents.push(ident.clone()),
+                            match *value {
+                                Ident(ref ident) => idents.push(ident.clone()),
                                 _ => return Err(not_an_identifier(value))
                             }
                         }
@@ -416,12 +430,14 @@ mod functions {
     /// `print : A... -> nil`
     /// 
     /// Prints the specified values to the standard output.
-    pub fn _print(_: Env, args: Args) -> Output {
-        for arg in args {
-            print!("{}", arg);
+    pub fn _print(env: Env, args: Args) -> Output {
+        let out = _concat(env, args)?;
+        if let Str(ref s) = out {
+            println!("{}", s);
+            ok(nil())
+        } else {
+            err("Unknown failure.")
         }
-        println!();
-        Ok(nil())
     }
 
     /// `begin : A... -> A`
@@ -868,6 +884,19 @@ mod functions {
             &Bool(b) => ok(!b),
             _ => Err(format!("{} is not a bool.", arg))
         }
+    }
+
+    /// `A... -> str`
+    /// Produces a string containing all arguments concatenated together.
+    pub fn _concat(_: Env, args: Args) -> Output {
+        let mut buf = String::new();
+
+        for arg in args.iter() {
+            let arg_str = format!("{}", arg);
+            buf.push_str(&arg_str);
+        }
+
+        ok(buf)
     }
 
     /// Produces an error if the number of arguments found doesn't match the
