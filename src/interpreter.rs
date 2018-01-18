@@ -16,6 +16,9 @@ pub trait Eval {
     fn eval(&self, ctx: &mut Environment) -> Result<Value, String>;
 }
 
+const SUPER: &'static str = "super:";
+const SUPER_LEN: usize = 6;
+
 impl Eval for SExpr {
     fn eval(&self, ctx: &mut Environment) -> Result<Value, String> {
         match *self {
@@ -26,10 +29,27 @@ impl Eval for SExpr {
 
             // Fetch value of identifier in context
             SExpr::Ident(ref s) => {
-                if let Some(val) = ctx.get(s) {
-                    Ok(val.clone())
+                // Previous scope if identifier begins with "super:"
+                let index = s.find(SUPER);
+                let contains_super = match index {
+                    Some(_) => true,
+                    _ => false
+                };
+
+                let ident = match index {
+                    Some(index) => &s[SUPER_LEN..],
+                    None => s
+                };
+
+                let res = if contains_super {
+                    ctx.get_super(ident)
                 } else {
-                    Err(unbound(s))
+                    ctx.get(ident)
+                };
+
+                match res {
+                    Some(val) => ok(val.clone()),
+                    None => err(unbound(ident))
                 }
             }
 

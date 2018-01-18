@@ -102,3 +102,29 @@
 
 ;; Greeting
 (print "Welcome to " lisp-name " v" lisp-version ".")
+
+;; make-point : num num -> point
+;; point-x : point -> num
+;; point-y : point -> num
+;; A point represents a pair of numeric coordinates named "x" and "y".
+(define-struct 
+    (point x y))
+
+;; point-add : point point -> point
+;; Determines the sum of two points, where the sum is the point whose
+;; coordinates are equal to the two points' corresponding coordinates added
+;; together.
+(define (point-add p1 p2)
+    (make-point
+        (+ (point-x p1) (point-x p2))
+        (+ (point-y p1) (point-y p2))))
+
+;; point-disp : point -> str
+;; Produces a str representation of a point in the form "(x, y)".
+(define (point-disp pt)
+    (concat "(" (point-x pt) ", " (point-y pt) ")"))
+
+(define (disp val)
+    (cond [(point? val) (point-disp val)]
+          [else (concat val)]))
+

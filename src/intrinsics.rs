@@ -4,6 +4,7 @@ use sexpr::SExpr;
 use errors::*;
 use values::*;
 use environment::Environment;
+use std::collections::HashMap;
 
 /// The name of the lisp interpreter.
 const NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -20,8 +21,6 @@ const RESERVED_WORDS: [&'static str; 6] = [
     "if",
     "let"
 ];
-
-const FIELD_NAMES_FORMAT: &'static str = "{}-field-names";
 
 fn nil() -> Value {
     Value::List(vec![])
@@ -336,53 +335,132 @@ mod macros {
                     if len < 1 {
                         Err(arity_exact(1, len))
                     } else {
-                        let mut idents: Vec<String> = Vec::with_capacity(len);
+                        // Get name
+                        let name_expr = &vals[0];
+                        let name: String;
+                        match name_expr {
+                            &Ident(ref ident) => name = ident.clone(),
+                            _ => return Err(not_an_identifier(name_expr))
+                        }
+
+                        let mut fields: Vec<String> = Vec::with_capacity(len - 1);
 
                         // Check that all values are identifiers
-                        for value in vals.iter() {
-                            match *value {
-                                Ident(ref ident) => idents.push(ident.clone()),
+                        for value in &vals[1..] {
+                            match value {
+                                &Ident(ref ident) => fields.push(ident.clone()),
                                 _ => return Err(not_an_identifier(value))
                             }
                         }
 
-                        // Create constructor
-                        let num_values = len - 1;
-                        let name = &idents[0];
-                        let make = format!("make-{}", name);
+                        env.add_struct(name.clone(), fields.clone());
+                        
+                        // Define type checker
+                        // ({struct}? val)
+                        let format = format!("{}?", &name);
+                        env.define_macro(format, |env, exprs| {
 
-                        // Define field names
-                        let ident_values: Vec<_> = idents.iter()
-                            .map(|ident| Value::Str(ident.clone()))
-                            .collect();
-                        let ident_values = Value::List(ident_values);
+                            let len = exprs.len();
+                            if len != 2 {
+                                err(::errors::arity_exact(1, len - 1))
+                            } else {
+                                let name = &exprs[0];
+                                if let &SExpr::Ident(ref ident) = name {
+                                    let len = ident.len();
+                                    let struct_name = &ident[..len - 1];
 
-                        env.define(
-                            format!("{}-field-names", name),
-                            ident_values
-                        );
-
-                        env.define_macro(make, |env, exprs| {
-                            let len = exprs.len() - 1;
-                            let name = &exprs[0];
-                            if let SExpr::Ident(ref name) = *name {
-                                // Name after "make-"
-                                let name = &name[5..];
-                                let fields = env.get(format!("{}-field-names", name));
-                                if let Some(&Value::List(ref fields)) = fields {
-                                    let args_len = fields.len();
-                                    if len != args_len {
-                                        return Err(arity_exact(args_len, len));
+                                    // Evaluate argument
+                                    // let struct_expr = &args[0];
+                                    // let struct_expr = struct_expr.eval(env)?;
+                                    let value = &exprs[1];
+                                    let value = value.eval(env)?;
+                                    if let Value::Struct(ref name, _) = value {
+                                        ok(struct_name == name)
+                                    } else {
+                                        ok(false)
                                     }
+                                } else {
+                                    ok(false)
                                 }
                             }
-                            // let cond = len != num_values;
-                            if true {
-                                Err(format!("hi"))
+
+                        });
+
+                        // Define field accessors
+                        // ({struct}-{field} val)
+                        for field in fields.iter() {
+                            let accessor_name = format!("{}-{}", &name, field);
+                            env.define_macro(accessor_name, |env, exprs| {
+                                let accessor = &exprs[0];
+                                let args = &exprs[1..];
+                                let len = args.len();
+                                if len != 1 {
+                                    err(arity_exact(1, len))
+                                } else {
+                                    if let &SExpr::Ident(ref accessor) = accessor {
+                                        let hyphen_index = accessor.rfind('-');
+                                        if let Some(i) = hyphen_index {
+                                            let field_name = &accessor[i + 1..];
+                                            let struct_expr = &args[0];
+                                            let struct_expr = struct_expr.eval(env)?;
+                                            if let Value::Struct(_, ref values) = struct_expr {
+                                                let value = values.get(field_name)
+                                                    .unwrap()
+                                                    .clone();
+                                                ok(value)
+                                            } else {
+                                                err(format!("{} is not a struct.", struct_expr))
+                                            }
+                                        } else {
+                                            err(format!("{} is not an accessor", accessor))
+                                        }
+                                    } else {
+                                        err(not_an_identifier(accessor))
+                                    }
+                                }
+                            });
+                        }
+
+                        let make = format!("make-{}", &name);
+
+                        // Define constructor function
+                        env.define_macro(make, |env, exprs| {
+                            let name = &exprs[0];
+                            let params = &exprs[1..];
+                            if let &SExpr::Ident(ref name) = name {
+                                // Name after "make-"
+                                let name = &name[5..];
+                                let field_names: Vec<String>;
+                                {
+                                    let fields = env.get_struct(name);
+
+                                    match fields {
+                                        Some((_, fields)) => {
+                                            field_names = fields.to_vec();
+                                        },
+                                        _ => return err("Could load struct fields names.")
+                                    }
+                                }
+
+                                let len = params.len();
+                                let expected = field_names.len();
+
+                                if len != expected {
+                                    return Err(arity_exact(expected, len));
+                                }
+
+                                let mut values = HashMap::<String, Value>::new();
+                                for i in 0..expected {
+                                    let param = &params[i];
+                                    let field = &field_names[i];
+                                    let value = param.eval(env)?;
+                                    values.insert(field.to_string(), value);
+                                }
+
+                                ok(Value::Struct(name.to_string(), values))
                             } else {
-                                ok(nil())
+                                err(not_an_identifier(name))
                             }
-                            // ok(nil())
                         });
 
                         ok(nil())

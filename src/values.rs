@@ -81,21 +81,21 @@ impl fmt::Display for Value {
             },
 
             // { a: b, c: d, e: f }
-            &Struct(_, ref values) => {
+            &Struct(ref name, ref values) => {
                 // Write opening bracket
-                write!(f, "{{")?;
+                write!(f, "{} {{ ", name)?;
 
                 // Write keys, values in format: key: value
                 let last = values.len() - 1;
                 for (i, (key, value)) in values.iter().enumerate() {
                     write!(f, "{}: {}", key, value)?;
                     if i < last {
-                        write!(f, ",")?;
+                        write!(f, ", ")?;
                     }
                 }
 
                 // Write closing bracket
-                write!(f, "}}")
+                write!(f, " }}")
             }
         }
     }

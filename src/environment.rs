@@ -1,25 +1,61 @@
 use std::collections::HashMap;
 use values::Value;
 
+type Scope = HashMap<String, Value>;
+
 pub struct Environment {
-    stack: Vec<HashMap<String, Value>>
+    base: Scope,
+    stack: Vec<Scope>,
+    structs: HashMap<String, Vec<String>>
 }
 
 impl Environment {
     pub fn new() -> Environment {
         let mut env = Environment {
-            stack: vec![]
+            base: HashMap::new(),
+            stack: vec![],
+            structs: HashMap::new()
         };
         env.enter_scope();
         env
     }
 
-    fn cur_scope(&self) -> &HashMap<String, Value> {
+    pub fn structs(&self) -> &HashMap<String, Vec<String>> {
+        &self.structs
+    }
+
+    pub fn structs_mut(&mut self) -> &mut HashMap<String, Vec<String>> {
+        &mut self.structs
+    }
+
+    pub fn add_struct<S: Into<String>>(&mut self, name: S, fields: Vec<String>) {
+        self.structs_mut().insert(name.into(), fields);
+    }
+
+    pub fn get_struct<S: Into<String>>(&self, name: S) -> Option<(String, &[String])> {
+        let name = name.into();
+        let fields = self.structs().get(&name);
+        match fields {
+            Some(ref fields) => Some((name, fields)),
+            _ => None
+        }
+    }
+
+    pub fn prev_scope(&self) -> &Scope {
+        let len = self.stack.len();
+        if len > 1 { 
+            &self.stack[len - 1] 
+        } else {
+            &self.base
+        }
+    }
+
+    pub fn cur_scope(&self) -> &Scope {
         let len = self.stack.len();
         &self.stack[len - 1]
     }
 
-    fn cur_scope_mut(&mut self) -> &mut HashMap<String, Value> {
+    pub fn cur_scope_mut(&mut self) -> &mut Scope {
         let len = self.stack.len();
         &mut self.stack[len - 1]
     }
@@ -48,5 +84,22 @@ impl Environment {
             }
         }
         None
+    }
+
+    pub fn get_super<K>(&self, key: K) -> Option<&Value>
+        where K: AsRef<str>
+    {
+        let key = key.as_ref();
+        let len = self.stack.len();
+        if len > 1 {
+            for scope in (&self.stack[..len - 1]).iter().rev() {
+                if let Some(value) = scope.get(key) {
+                    return Some(value);
+                }
+            }
+            None
+        } else {
+            self.base.get(key)
+        }
     }
 }
