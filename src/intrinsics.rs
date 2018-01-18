@@ -85,6 +85,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("str?", functions::_is_str);
         self.define_intrinsic("cons?", functions::_is_cons);
         self.define_intrinsic("lambda?", functions::_is_lambda);
+        self.define_intrinsic("symbol?", functions::_is_symbol);
 
         // List functions
         self.define_intrinsic("list", functions::_list);
@@ -326,28 +327,21 @@ mod macros {
     /// `(define-struct (struct-name field1 ...)`
     pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
         let len = exprs.len() - 1;
-        if len != 1 {
-            Err(arity_exact(1, len))
+        if len != 2 {
+            Err(arity_exact(2, len))
         } else {
-            let struct_def = &exprs[1];
-            match struct_def {
-                &List(ref vals) => {
+            let (struct_name, struct_def) = (&exprs[1], &exprs[2]);
+            match (struct_name, struct_def) {
+                (&Ident(ref name), &List(ref vals)) => {
                     let len = vals.len();
                     if len < 1 {
                         Err(arity_exact(1, len))
                     } else {
-                        // Get name
-                        let name_expr = &vals[0];
-                        let name: String;
-                        match name_expr {
-                            &Ident(ref ident) => name = ident.clone(),
-                            _ => return Err(not_an_identifier(name_expr))
-                        }
 
-                        let mut fields: Vec<String> = Vec::with_capacity(len - 1);
+                        let mut fields: Vec<String> = Vec::with_capacity(len);
 
                         // Check that all values are identifiers
-                        for value in &vals[1..] {
+                        for value in vals.iter() {
                             match value {
                                 &Ident(ref ident) => fields.push(ident.clone()),
                                 _ => return Err(not_an_identifier(value))
@@ -695,6 +689,19 @@ mod functions {
         let arg = &args[0];
         match arg {
             &Str(_) => ok(true),
+            _ => ok(false)
+        }
+    }
+
+    /// `symbol? : A -> bool`
+    /// 
+    /// Determines whether or not the specified value is a symbol.
+    pub fn _is_symbol(_: Env, args: Args) -> Output {
+        check_arity(1, args.len())?;
+
+        let arg = &args[0];
+        match arg {
+            &Symbol(_) => ok(true),
             _ => ok(false)
         }
     }

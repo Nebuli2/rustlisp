@@ -35,7 +35,7 @@ fn main() {
     env.init_intrinsics();
 
     // Read library
-    let _ = File::open("lisp-lib/stdlib.rkt").map(|f| {
+    let _ = File::open("lisp-lib/stdlib.rlisp").map(|f| {
         let mut reader = BufReader::new(f);
         let mut parser = Parser::new();
         let parsed = parser.parse_all(&mut reader)

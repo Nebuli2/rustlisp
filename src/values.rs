@@ -107,14 +107,14 @@ impl fmt::Display for Value {
                 write!(f, ") {})", body)
             },
 
-            // <Intrinsic>
+            // <function>
             &Intrinsic(_) => {
-                write!(f, "<Intrinsic>")
+                write!(f, "<function>")
             },
 
-            // <Macro>
+            // <procedure>
             &Macro(_) => {
-                write!(f, "<Macro>")
+                write!(f, "<procedure>")
             },
 
             // { a: b, c: d, e: f }
@@ -177,6 +177,36 @@ impl PartialEq for Value {
             (&Num(a), &Num(b)) => a == b,
             (&Bool(a), &Bool(b)) => a == b,
             (&Str(ref a), &Str(ref b)) => a == b,
+            (&Symbol(ref a), &Symbol(ref b)) => a == b,
+            (&List(ref a), &List(ref b)) => {
+                if a.len() == b.len() {
+                    for i in 0..a.len() {
+                        let (a_val, b_val) = (&a[i], &b[i]);
+                        if a_val != b_val {
+                            return false;
+                        }
+                    }
+                    true
+                } else {
+                    false
+                }
+            },
+            (&Struct(ref a_ident, ref a_fields), &Struct(ref b_ident, ref b_fields)) => {
+                if a_ident == b_ident {
+                    for (key, a_value) in a_fields.iter() {
+                        if let Some(b_value) = b_fields.get(key) {
+                            if a_value != b_value {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
             _ => false
         }
     }

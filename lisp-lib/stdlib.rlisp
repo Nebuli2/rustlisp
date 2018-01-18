@@ -107,8 +107,7 @@
 ;; point-x : point -> num
 ;; point-y : point -> num
 ;; A point represents a pair of numeric coordinates named "x" and "y".
-(define-struct 
-    (point x y))
+(define-struct point [x y])
 
 ;; point-add : point point -> point
 ;; Determines the sum of two points, where the sum is the point whose
