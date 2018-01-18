@@ -127,4 +127,3 @@
 (define (disp val)
     (cond [(point? val) (point-disp val)]
           [else (concat val)]))
-

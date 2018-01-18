@@ -17,8 +17,8 @@ pub trait Eval {
     fn eval(&self, ctx: &mut Environment) -> Result<Value, String>;
 }
 
-const SUPER: &'static str = "super:";
-const SUPER_LEN: usize = 6;
+const SUPER: &'static str = "#super:";
+const SUPER_LEN: usize = 7;
 
 impl Eval for SExpr {
     fn eval(&self, ctx: &mut Environment) -> Result<Value, String> {
