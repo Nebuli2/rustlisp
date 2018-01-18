@@ -8,6 +8,7 @@ pub enum Value {
     Num(f64),
     Bool(bool),
     Str(String),
+    Symbol(String),
     List(Vec<Value>),
     Func(Vec<String>, SExpr),
     Intrinsic(Intrinsic),
@@ -38,6 +39,10 @@ impl fmt::Display for Value {
             &Str(ref s) => {
                 write!(f, "{}", s)
             },
+
+            &Symbol(ref s) => {
+                write!(f, "'{}", s)
+            }
 
             // '(a b c ...)
             &List(ref exps) => {
