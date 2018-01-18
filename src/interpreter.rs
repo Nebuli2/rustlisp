@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use values::*;
 use sexpr::SExpr;
+use sexpr::SExpr::*;
 use errors::*;
 use environment::Environment;
 
@@ -21,14 +22,14 @@ const SUPER_LEN: usize = 6;
 
 impl Eval for SExpr {
     fn eval(&self, ctx: &mut Environment) -> Result<Value, String> {
-        match *self {
+        match self {
             // Primitives map directly
-            SExpr::Num(n) => Ok(Value::Num(n)),
-            SExpr::Bool(b) => Ok(Value::Bool(b)),
-            SExpr::Str(ref s) => Ok(Value::Str(s.clone())),
+            &Num(n) => Ok(Value::Num(n)),
+            &Bool(b) => Ok(Value::Bool(b)),
+            &Str(ref s) => Ok(Value::Str(s.clone())),
 
             // Fetch value of identifier in context
-            SExpr::Ident(ref s) => {
+            &Ident(ref s) => {
                 // Previous scope if identifier begins with "super:"
                 let index = s.find(SUPER);
                 let contains_super = match index {
@@ -37,7 +38,7 @@ impl Eval for SExpr {
                 };
 
                 let ident = match index {
-                    Some(index) => &s[SUPER_LEN..],
+                    Some(_) => &s[SUPER_LEN..],
                     None => s
                 };
 
@@ -55,7 +56,7 @@ impl Eval for SExpr {
 
             // Evaluate first element of the list, then apply subsequent
             // elements to the first element if it is a function.
-            SExpr::List(ref vals) => {
+            &List(ref vals) => {
                 if vals.is_empty() {
                     Ok(empty())
                 } else {
@@ -101,8 +102,14 @@ impl Eval for SExpr {
                 }
             },
 
+            // Quoted expression
+            &Quote(ref expr) => {
+                let r = expr.as_ref().clone();
+                Ok(r.into())
+            }
+
             // Nil evaluates to an empty list
-            SExpr::Nil => Ok(empty())
+            &SExpr::Nil => Ok(empty())
         }
     }
 }

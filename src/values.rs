@@ -16,6 +16,37 @@ pub enum Value {
     Struct(String, HashMap<String, Value>)
 }
 
+impl From<SExpr> for Value {
+    fn from(expr: SExpr) -> Value {
+        match expr {
+            SExpr::Num(n) => Value::Num(n),
+            SExpr::Bool(n) => Value::Bool(n),
+            SExpr::Str(s) => Value::Str(s),
+            SExpr::Ident(s) => Value::Symbol(s),
+            SExpr::List(vals) => Value::List(  
+                vals.into_iter().map(|expr| expr.into()).collect()
+            ),
+            SExpr::Nil => Value::List(vec![]),
+            SExpr::Quote(expr) => (*expr).into()
+        }
+    }
+}
+
+impl Into<SExpr> for Value {
+    fn into(self) -> SExpr {
+        match self {
+            Value::Num(n) => SExpr::Num(n),
+            Value::Bool(n) => SExpr::Bool(n),
+            Value::Str(s) => SExpr::Str(s),
+            Value::Symbol(s) => SExpr::Ident(s),
+            Value::List(vals) => SExpr::List(
+                vals.into_iter().map(|expr| expr.into()).collect()
+            ),
+            _ => panic!("Evaluating other values is not yet supported.")
+        }
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
@@ -40,13 +71,14 @@ impl fmt::Display for Value {
                 write!(f, "{}", s)
             },
 
+            // 'symbol
             &Symbol(ref s) => {
-                write!(f, "'{}", s)
+                write!(f, "{}", s)
             }
 
-            // '(a b c ...)
+            // (a b c ...)
             &List(ref exps) => {
-                write!(f, "'(")?;
+                write!(f, "(")?;
                 let len = exps.len();
                 if len > 0 {
                     for i in 0..len - 1 {

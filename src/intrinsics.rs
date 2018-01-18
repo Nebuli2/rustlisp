@@ -112,6 +112,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("print", functions::_print);
         self.define_intrinsic("apply", functions::_apply);
         self.define_intrinsic("concat", functions::_concat);
+        self.define_intrinsic("eval", functions::_eval);
     }
 }
 
@@ -975,6 +976,14 @@ mod functions {
         }
 
         ok(buf)
+    }
+
+    pub fn _eval(env: Env, args: Args) -> Output {
+        check_arity(1, args.len())?;
+
+        let arg = (&args[0]).clone();
+        let expr: SExpr = arg.into();
+        expr.eval(env)
     }
 
     /// Produces an error if the number of arguments found doesn't match the

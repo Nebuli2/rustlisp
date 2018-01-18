@@ -8,6 +8,7 @@ pub enum SExpr {
     Bool(bool),
     Ident(String),
     List(Vec<SExpr>),
+    Quote(Box<SExpr>),
     Nil
 }
 
@@ -43,8 +44,13 @@ impl fmt::Display for SExpr {
                 write!(f, ")")
             },
 
-            // ()
-            Nil => write!(f, "()")
+            // 'quote
+            Quote(ref expr) => {
+                write!(f, "'{}", expr)
+            }
+
+            // '()
+            Nil => write!(f, "'()")
         }
     }
 }

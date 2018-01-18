@@ -58,6 +58,11 @@ impl Parser {
                         self.skip_to_linebreak(r);
                         return self.parse(r)
                     }
+                    '\'' => {
+                        let quoted = self.parse(r)?;
+                        let quoted = SExpr::Quote(Box::new(quoted));
+                        return Ok(quoted)
+                    },
                     '(' => return self.parse_list(r, ')'),
                     '[' => return self.parse_list(r, ']'),
                     '"' => return self.parse_str(r),
