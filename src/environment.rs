@@ -2,11 +2,28 @@ use std::collections::HashMap;
 use values::Value;
 
 type Scope = HashMap<String, Value>;
+type StructFields = Vec<String>;
+
+pub trait FieldIndex {
+    fn index<K: AsRef<str>>(&self, key: K) -> Option<usize>;
+}
+
+impl FieldIndex for StructFields {
+    fn index<K: AsRef<str>>(&self, key: K) -> Option<usize> {
+        let key = key.as_ref();
+        for (i, k) in self.iter().enumerate() {
+            if k == key {
+                return Some(i);
+            }
+        }
+        None
+    }
+}
 
 pub struct Environment {
     base: Scope,
     stack: Vec<Scope>,
-    structs: HashMap<String, Vec<String>>
+    structs: HashMap<String, StructFields>
 }
 
 impl Environment {
@@ -20,23 +37,23 @@ impl Environment {
         env
     }
 
-    pub fn structs(&self) -> &HashMap<String, Vec<String>> {
+    pub fn structs(&self) -> &HashMap<String, StructFields> {
         &self.structs
     }
 
-    pub fn structs_mut(&mut self) -> &mut HashMap<String, Vec<String>> {
+    pub fn structs_mut(&mut self) -> &mut HashMap<String, StructFields> {
         &mut self.structs
     }
 
-    pub fn add_struct<S: Into<String>>(&mut self, name: S, fields: Vec<String>) {
+    pub fn add_struct<S: Into<String>>(&mut self, name: S, fields: StructFields) {
         self.structs_mut().insert(name.into(), fields);
     }
 
-    pub fn get_struct<S: Into<String>>(&self, name: S) -> Option<(String, &[String])> {
+    pub fn get_struct<S: Into<String>>(&self, name: S) -> Option<&StructFields> {
         let name = name.into();
         let fields = self.structs().get(&name);
         match fields {
-            Some(ref fields) => Some((name, fields)),
+            Some(ref fields) => Some(fields),
             _ => None
         }
     }

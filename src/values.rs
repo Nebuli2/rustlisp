@@ -1,7 +1,6 @@
 use sexpr::*;
 use interpreter::*;
 use std::fmt;
-use std::collections::HashMap;
 
 #[derive(Clone)]
 pub enum Value {
@@ -13,7 +12,7 @@ pub enum Value {
     Func(Vec<String>, SExpr),
     Intrinsic(Intrinsic),
     Macro(Macro),
-    Struct(String, HashMap<String, Value>)
+    Struct(String, Vec<Value>)
 }
 
 impl From<SExpr> for Value {
@@ -42,6 +41,14 @@ impl Into<SExpr> for Value {
             Value::List(vals) => SExpr::List(
                 vals.into_iter().map(|expr| expr.into()).collect()
             ),
+            Value::Struct(ref name, ref fields) => {
+                let mut exprs: Vec<SExpr> = Vec::with_capacity(fields.len() + 1);
+                exprs.push(SExpr::Ident(format!("make-{}", name)));
+                for field in fields {
+                    exprs.push(field.clone().into());
+                }
+                SExpr::List(exprs)
+            }
             _ => panic!("Evaluating other values is not yet supported.")
         }
     }
@@ -120,19 +127,15 @@ impl fmt::Display for Value {
             // { a: b, c: d, e: f }
             &Struct(ref name, ref values) => {
                 // Write opening bracket
-                write!(f, "{} {{ ", name)?;
+                write!(f, "(make-{}", name)?;
 
                 // Write keys, values in format: key: value
-                let last = values.len() - 1;
-                for (i, (key, value)) in values.iter().enumerate() {
-                    write!(f, "{}: {}", key, value)?;
-                    if i < last {
-                        write!(f, ", ")?;
-                    }
+                for value in values.iter() {
+                    write!(f, " {}", value)?;
                 }
 
                 // Write closing bracket
-                write!(f, " }}")
+                write!(f, ")")
             }
         }
     }
@@ -193,12 +196,9 @@ impl PartialEq for Value {
             },
             (&Struct(ref a_ident, ref a_fields), &Struct(ref b_ident, ref b_fields)) => {
                 if a_ident == b_ident {
-                    for (key, a_value) in a_fields.iter() {
-                        if let Some(b_value) = b_fields.get(key) {
-                            if a_value != b_value {
-                                return false;
-                            }
-                        } else {
+                    for (i, a_value) in a_fields.iter().enumerate() {
+                        let b_value = &b_fields[i];
+                        if a_value != b_value {
                             return false;
                         }
                     }

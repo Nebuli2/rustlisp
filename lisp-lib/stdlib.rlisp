@@ -123,6 +123,23 @@
 (define (point-disp pt)
     (concat "(" (point-x pt) ", " (point-y pt) ")"))
 
+;; point-dist : point point -> num
+;; Calculates the distance between the two specified points.
+(define (point-dist p1 p2)
+    (let ([dx (- (point-x p1) (point-x p2))]
+          [dy (- (point-y p1) (point-y p2))])
+        (sqrt (+ (* dx dx) (* dy dy)))))
+
+
+;; displayable = num
+;;             | bool
+;;             | str
+;;             | symbol
+;;             | [displayable]
+;;             | lambda
+;;             | point
+
+;; disp : displayable -> nil
 (define (disp val)
     (cond [(point? val) (point-disp val)]
           [else (concat val)]))

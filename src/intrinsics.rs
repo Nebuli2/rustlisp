@@ -2,8 +2,7 @@ use interpreter::*;
 use sexpr::SExpr;
 use errors::*;
 use values::*;
-use environment::Environment;
-use std::collections::HashMap;
+use environment::*;
 
 /// The name of the lisp interpreter.
 const NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -12,8 +11,9 @@ const NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// All reserved words that may not be used as identifiers.
-const RESERVED_WORDS: [&'static str; 6] = [
+const RESERVED_WORDS: [&'static str; 7] = [
     "define",
+    "define-struct",
     "begin",
     "cond",
     "else",
@@ -394,13 +394,19 @@ mod macros {
                                     if let &SExpr::Ident(ref accessor) = accessor {
                                         let hyphen_index = accessor.rfind('-');
                                         if let Some(i) = hyphen_index {
+                                            let struct_name = &accessor[..i];
                                             let field_name = &accessor[i + 1..];
                                             let struct_expr = &args[0];
                                             let struct_expr = struct_expr.eval(env)?;
                                             if let Value::Struct(_, ref values) = struct_expr {
-                                                let value = values.get(field_name)
-                                                    .unwrap()
-                                                    .clone();
+
+                                                // We know that these have been defined, so it is
+                                                // safe to unwrap them.
+                                                let struct_def = env.get_struct(struct_name).unwrap();
+                                                let index = struct_def.index(field_name).unwrap();
+
+                                                let value = &values[index];
+                                                let value = value.clone();
                                                 ok(value)
                                             } else {
                                                 err(format!("{} is not a struct.", struct_expr))
@@ -424,18 +430,12 @@ mod macros {
                             if let &SExpr::Ident(ref name) = name {
                                 // Name after "make-"
                                 let name = &name[5..];
-                                let field_names: Vec<String>;
-                                {
-                                    let fields = env.get_struct(name);
 
-                                    match fields {
-                                        Some((_, fields)) => {
-                                            field_names = fields.to_vec();
-                                        },
-                                        _ => return err("Could load struct fields names.")
-                                    }
-                                }
-
+                                // We know this has been defined, so it is safe to unwrap.
+                                let field_names = env.get_struct(name)
+                                    .unwrap()
+                                    .clone();
+                                
                                 let len = params.len();
                                 let expected = field_names.len();
 
@@ -443,12 +443,9 @@ mod macros {
                                     return Err(arity_exact(expected, len));
                                 }
 
-                                let mut values = HashMap::<String, Value>::new();
-                                for i in 0..expected {
-                                    let param = &params[i];
-                                    let field = &field_names[i];
-                                    let value = param.eval(env)?;
-                                    values.insert(field.to_string(), value);
+                                let mut values: Vec<Value> = Vec::with_capacity(expected);
+                                for param in params.iter() {
+                                    values.push(param.eval(env)?);
                                 }
 
                                 ok(Value::Struct(name.to_string(), values))
