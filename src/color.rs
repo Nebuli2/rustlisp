@@ -20,3 +20,13 @@ pub fn err<S: Into<String>>(s: S) -> String {
 pub fn err<S: Into<String>>(s: S) -> String {
     Red.paint(s.into()).to_string()
 }
+
+#[cfg(target_os = "windows")]
+pub fn res<S: Into<String>>(s: S) -> String {
+    s.into()
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn res<S: Into<String>>(s: S) -> String {
+    Green.paint(s.into()).to_string()
+}

@@ -39,7 +39,10 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
         match expr.eval(env) {
             Ok(res) => match res {
                 Value::List(ref vals) if vals.is_empty() => continue,
-                _ => println!("{}", res)
+                _ => {
+                    let out = format!("= {}", res);
+                    println!("{}", color::res(out))
+                }
             },
             Err(why) => {
                 print_err(why)
@@ -50,7 +53,7 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
 
 /// Runs a REPL for the specified environment.
 pub fn run(env: &mut Environment) {
-    let prompt = format!("{}> ", user_name());
+    let prompt = format!("> ");
     loop {
         print_prompt(&prompt).expect("Failed to print prompt.");
         if let Ok(line) = read_input_line() {

@@ -39,6 +39,7 @@ impl Parser {
         Ok(results)
     }
 
+    /// Skips the parser forward until a linebreak is reached.
     fn skip_to_linebreak<R: Read>(&mut self, r: &mut BufReader<R>) {
         loop {
             match self.next_char(r) {
@@ -49,6 +50,8 @@ impl Parser {
         }
     }
 
+    /// Produces the next expression from the reader, or an error if one is not
+    /// found.
     pub fn parse<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
         loop {
             match self.next_char(r) {
@@ -76,42 +79,57 @@ impl Parser {
         }
     }
 
+    fn read_atom<R: Read>(&mut self, r: &mut BufReader<R>) -> Option<String> {
+        let mut buf = String::new();
+
+        while let Some(c) = self.next_char(r) {
+            if !c.is_valid_atom() {
+                self.undo_char(c);
+                break;
+            }
+
+            if c.is_whitespace() {
+                self.undo_char(c);
+                break;
+            } else {
+                buf.push(c);
+            }
+        }
+
+        if buf.is_empty() {
+            None
+        } else {
+            Some(buf)
+        }
+    }
+
     fn parse_atom<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
-        let ident = self.parse_ident(r)?;
-        
-        if let SExpr::Ident(s) = ident {
+        let atom = self.read_atom(r);
+        if let Some(s) = atom {
+            // Check true
             if s == "#t" || s == "true" {
                 return Ok(SExpr::Bool(true));
             }
 
+            // Check false
             if s == "#f" || s == "false" {
                 return Ok(SExpr::Bool(false));
             }
 
-            // Try num
+            // Check num
             if let Ok(num) = s.parse::<f64>() {
                 return Ok(SExpr::Num(num));
             }
 
-            Ok(SExpr::Ident(s))
-        } else {
-            Err("Error parsing atom.".to_string())
-        }
-    }
-
-    fn parse_ident<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse{
-        let mut buf = String::new();
-
-        while let Some(c) = self.next_char(r) {
-            if c.is_valid_ident() {
-                buf.push(c);
+            // Check if valid identifier
+            if s.chars().all(|c| c.is_valid_ident()) {
+                Ok(SExpr::Ident(s))
             } else {
-                self.undo_char(c);
-                break;
+                Err(format!("Invalid identifier {}.", s))
             }
+        } else {
+            Err("No atom.".to_string())
         }
-
-        Ok(SExpr::Ident(buf.to_lowercase()))
     }
 
     fn parse_str<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
@@ -173,17 +191,30 @@ impl Parser {
     }
 }
 
-trait IsValidIdent {
+trait ValidAtom {
+    fn is_valid_atom(&self) -> bool;
+}
+
+trait ValidIdent {
     fn is_valid_ident(&self) -> bool;
 }
 
-impl IsValidIdent for char {
+impl ValidAtom for char {
+    fn is_valid_atom(&self) -> bool {
+        match *self {
+            '(' | '[' | ')' | ']' => false,
+            _ => true
+        }
+    }
+}
+
+impl ValidIdent for char {
     fn is_valid_ident(&self) -> bool {
         match *self {
             '-' | '_' | '+' | '/' | '*' |
             '%' | '>' | '<' | '=' | '?' |
             '!' | '&' | '$' | '.' | '#' |
-            ':' |
+            ':' | 'λ' |
             'a' ... 'z' | 'A' ... 'Z' | '0' ... '9' => true,
             _ => false
         }
