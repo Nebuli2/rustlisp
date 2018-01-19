@@ -1,30 +1,23 @@
 extern crate ansi_term;
-use ansi_term::Color::*;
 
 mod parser;
-use parser::Parser;
-
 mod sexpr;
-use sexpr::SExpr;
-
 mod interpreter;
-use interpreter::*;
-
 mod intrinsics;
-use intrinsics::Intrinsics;
-
 mod errors;
 mod utils;
 mod values;
-use values::*;
 mod environment;
-use environment::Environment;
-
 mod color;
-
 mod repl;
-use repl::*;
 
+use parser::Parser;
+use sexpr::SExpr;
+use interpreter::*;
+use intrinsics::Intrinsics;
+use values::*;
+use environment::Environment;
+use repl::*;
 use std::io::BufReader;
 use std::fs::File;
 

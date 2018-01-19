@@ -1,5 +1,4 @@
-use std::io::{self, BufReader, Error, Write};
-use std::fs::File;
+use std::io::{ self, BufReader, Error, Write };
 
 use color;
 

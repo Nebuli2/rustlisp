@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "windows"))]
 use ansi_term::Color::*;
 
 #[cfg(target_os = "windows")]

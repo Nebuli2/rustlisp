@@ -1,5 +1,4 @@
 use std::env;
-use std::fs;
 
 pub fn user_name() -> String {
     if let Some(home_dir) = env::home_dir() {

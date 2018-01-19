@@ -1,5 +1,4 @@
 use interpreter::*;
-use parser::Parser;
 use sexpr::SExpr;
 use errors::*;
 use values::*;

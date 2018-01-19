@@ -15,10 +15,10 @@ impl Parser {
         }
     }
 
-    pub fn parse_from_str(&mut self, s: &str) -> Parse {
-        let mut buf = BufReader::new(s.as_bytes());
-        self.parse(&mut buf)
-    }
+    // pub fn parse_from_str(&mut self, s: &str) -> Parse {
+    //     let mut buf = BufReader::new(s.as_bytes());
+    //     self.parse(&mut buf)
+    // }
 
     pub fn parse_all<R: Read>(&mut self, r: &mut BufReader<R>) -> Result<Vec<SExpr>, String> {
         let mut results: Vec<SExpr> = vec![];
@@ -170,15 +170,6 @@ impl Parser {
 
     fn undo_char(&mut self, c: char) {
         self.stack.push(c);
-    }
-
-    fn peak_char<R: Read>(&mut self, r: &mut BufReader<R>) -> Option<char> {
-        if let Some(c) = self.next_char(r) {
-            self.undo_char(c);
-            Some(c)
-        } else {
-            None
-        }
     }
 }
 
