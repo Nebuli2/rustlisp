@@ -40,8 +40,8 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
             Ok(res) => match res {
                 Value::List(ref vals) if vals.is_empty() => continue,
                 _ => {
-                    let out = format!("= {}", res);
-                    println!("{}", color::res(out))
+                    let out = format!("{}", res);
+                    println!("{}", out)
                 }
             },
             Err(why) => {

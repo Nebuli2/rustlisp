@@ -13,7 +13,7 @@ pub fn empty() -> Value {
 }
 
 pub trait Eval {
-    fn eval(&self, ctx: &mut Environment) -> Result<Value, String>;
+    fn eval(&self, &mut Environment) -> Result<Value, String>;
 }
 
 const SUPER: &'static str = "#super:";

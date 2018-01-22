@@ -5,7 +5,7 @@ type Scope = HashMap<String, Value>;
 type StructFields = Vec<String>;
 
 pub trait FieldIndex {
-    fn index<K: AsRef<str>>(&self, key: K) -> Option<usize>;
+    fn index<K: AsRef<str>>(&self, K) -> Option<usize>;
 }
 
 impl FieldIndex for StructFields {

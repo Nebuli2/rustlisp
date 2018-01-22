@@ -26,11 +26,9 @@ fn nil() -> Value {
 }
 
 pub trait Intrinsics {
-    fn define_intrinsic<S>(&mut self, ident: S, f: Intrinsic)
-        where S: Into<String>;
+    fn define_intrinsic<S>(&mut self, S, Intrinsic) where S: Into<String>;
 
-    fn define_macro<S>(&mut self, ident: S, f: Macro)
-        where S: Into<String>;
+    fn define_macro<S>(&mut self, S, Macro) where S: Into<String>;
 
     fn init_intrinsics(&mut self);
 }
@@ -93,6 +91,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("cdr", functions::_cdr);
         self.define_intrinsic("len", functions::_len);
         self.define_intrinsic("nth", functions::_nth);
+        self.define_intrinsic("append", functions::_append);
 
         // Comparison operations
         self.define_intrinsic("<", functions::_is_l);
@@ -842,6 +841,25 @@ mod functions {
             },
             _ => err("Does not match contract.")
         }
+    }
+
+    /// `append : [A]... -> [A]`
+    pub fn _append(_: Env, args: Args) -> Output {
+        let mut buf = Vec::<Value>::new();
+
+        for arg in args.iter() {
+            match arg {
+                &List(ref vals) => {
+                    let vals: Vec<_> = vals.iter()
+                        .map(|val| val.clone())
+                        .collect();
+                    buf.extend(vals);
+                },
+                _ => return err(format!("{} is not a list.", arg))
+            }
+        }
+
+        Ok(List(buf))
     }
 
     /// `< : num num -> bool`

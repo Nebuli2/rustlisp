@@ -26,7 +26,19 @@
 ;; Maps the specified function to the specified list, producing a list
 ;; containing the mapped results.
 (define (map func lst)
-    (foldr (lambda [val lst] (cons (func val) lst)) empty lst))
+    (if (empty? lst)
+        lst
+        (cons 
+            (func (car lst))
+            (map func (cdr lst)))))
+
+;; flatmap : (A -> [B]) [A] -> [B]
+(define (flatmap func lst)
+    (if (empty? lst)
+        lst
+        (append
+            (func (car lst))
+            (flatmap func (cdr lst)))))
 
 ;; ormap : (A -> bool) [A] -> bool
 ;; Determines whether or not at least one element of the list satisfies the
@@ -143,3 +155,27 @@
 (define (disp val)
     (cond [(point? val) (point-disp val)]
           [else (concat val)]))
+
+(define (contains? lst elem)
+    (cond [(empty? lst) #f]
+          [(eq? (car lst) elem) #t]
+          [else (contains? (cdr lst) elem)]))
+
+(define (point-square pt)
+    (let ([x (point-x pt)]
+          [y (point-y pt)])
+        (make-point
+            (* x x)
+            (* y y))))
+
+(define (nil? val)
+    (if (cons? val)
+        (empty? val)
+        #f))
+
+(define (nums-to num)
+    (if (<= num 0) 
+        empty
+        (cons num (nums-to (- num 1)))))
+
+
