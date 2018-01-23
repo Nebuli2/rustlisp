@@ -178,4 +178,15 @@
         empty
         (cons num (nums-to (- num 1)))))
 
+(define real? num?)
+(define boolean? bool?)
+(define string? str?)
+
+(define (struct? val)
+    (cond [(num? val) #f]
+          [(str? val) #f]
+          [(bool? val) #f]
+          [(symbol? val) #f]
+          [(cons? val) #f]
+          [else #t]))
 

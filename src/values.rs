@@ -75,7 +75,7 @@ impl fmt::Display for Value {
 
             // "string"
             &Str(ref s) => {
-                write!(f, "{}", s)
+                write!(f, "\"{}\"", s)
             },
 
             // 'symbol
