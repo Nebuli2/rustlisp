@@ -112,8 +112,11 @@
             (fib (- n 1)) 
             (fib (- n 2)))]))
 
+(define (printf fmt)
+    (print (format fmt)))
+
 ;; Greeting
-(print "Welcome to " lisp-name " v" lisp-version ".")
+(printf "Welcome to ${lisp-name} v${lisp-version}.")
 
 ;; make-point : num num -> point
 ;; point-x : point -> num
@@ -178,15 +181,4 @@
         empty
         (cons num (nums-to (- num 1)))))
 
-(define real? num?)
-(define boolean? bool?)
-(define string? str?)
-
-(define (struct? val)
-    (cond [(num? val) #f]
-          [(str? val) #f]
-          [(bool? val) #f]
-          [(symbol? val) #f]
-          [(cons? val) #f]
-          [else #t]))
 
