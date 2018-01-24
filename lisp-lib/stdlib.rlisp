@@ -73,12 +73,12 @@
 ;; max : [num] -> num
 ;; Determines the maximum of the specified list of numbers.
 (define (max lst)
-    (foldr greater -infinity lst))
+    (foldr greater math/-infinity lst))
 
 ;; min : [num] -> num
 ;; Determines the minimum of the specified list of numbers.
 (define (min lst)
-    (foldr lesser infinity lst))
+    (foldr lesser math/infinity lst))
 
 ;; sum : [num] -> num
 ;; Determines the sum of the specified list of numbers.
@@ -131,4 +131,4 @@
     (print (format fmt)))
 
 ;; Greeting
-(printf "Welcome to ${lisp-name} v${lisp-version}.")
+(format "Welcome to ${env/lisp-name} v${env/lisp-version}.")

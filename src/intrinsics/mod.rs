@@ -56,11 +56,16 @@ impl Intrinsics for Environment {
         self.define("empty", nil());
 
         let infinity = ::std::f64::INFINITY;
-        self.define("infinity", Num(infinity));
-        self.define("-infinity", Num(-infinity));
+        self.define("math/infinity", Num(infinity));
+        self.define("math/-infinity", Num(-infinity));
 
-        self.define("lisp-version", Str(VERSION.to_string()));
-        self.define("lisp-name", Str(NAME.to_string()));
+        let pi = ::std::f64::consts::PI;
+        let e = ::std::f64::consts::E;
+        self.define("math/pi", Num(pi));
+        self.define("math/e", Num(e));
+
+        self.define("env/lisp-version", Str(VERSION.to_string()));
+        self.define("env/lisp-name", Str(NAME.to_string()));
 
         // Macros
         self.define_macro("define", macros::_define);
@@ -78,6 +83,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("modulo", functions::_modulo);
         self.define_intrinsic("sqrt", functions::_sqrt);
         self.define_intrinsic("pow", functions::_pow);
+        self.define_intrinsic("log", functions::_log);
 
         // Type checking functions
         self.define_intrinsic("num?", functions::_is_num);

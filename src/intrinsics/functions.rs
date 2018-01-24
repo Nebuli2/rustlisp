@@ -172,6 +172,31 @@ pub fn _sqrt(_: Env, args: Args) -> Output {
     }
 }
 
+/// `log` has two variants:
+/// 
+/// * `log : num -> num`
+/// 
+///   Produces the natural logarithm of the specified num.
+/// 
+/// * `log : num num -> num`
+///   
+///   Produces the logarithm of the first specified num, using the second
+///   specified num as the base.
+pub fn _log(_: Env, args: Args) -> Output {
+    let len = args.len();
+    match len {
+        1 => match &args[0] {
+            &Num(n) => ok(f64::ln(n)),
+            _ => err(not_a_number(&args[0]))
+        },
+        2 => match (&args[0], &args[1]) {
+            (&Num(n), &Num(base)) => ok(f64::log(n, base)),
+            _ => err("\"log\" expects two nums as arguments.")
+        },
+        _ => err(format!("Expected either 1 or 2 arguments, found {}.", len))
+    }
+}
+
 /// `pow : num num -> num`
 /// 
 /// Produces the num equal to the first num raised to the power of the
@@ -478,29 +503,36 @@ pub fn _is_eq(_: Env, args: Args) -> Output {
     ok(a == b)
 }
 
-/// `or : bool bool -> bool`
+/// `or : bool... -> bool`
 /// 
-/// Produces the logical `or` of the two boolean values.
+/// Produces the logical `or` of all the specified boolean values.
 pub fn _or(_: Env, args: Args) -> Output {
-    check_arity(2, args.len())?;
-
-    match (&args[0], &args[1]) {
-        (&Bool(a), &Bool(b)) => ok(a || b),
-        _ => Err(format!("\"or\" may only be called on bool values."))
+    for arg in args {
+        match arg {
+            &Bool(b) => if b {
+                return ok(true);
+            },
+            _ => return err(format!("{} is not a bool.", arg))
+        }
     }
+
+    ok(false)
 }
 
-/// `and : bool bool -> bool`
+/// `and : bool... -> bool`
 /// 
-/// Produces the logical `and` of the two boolean values.
+/// Produces the logical `and` of all the specified boolean values.
 pub fn _and(_: Env, args: Args) -> Output {
-    check_arity(2, args.len())?;
-
-    let (a, b) = (&args[0], &args[1]);
-    match (a, b) {
-        (&Bool(a), &Bool(b)) => ok(a && b),
-        _ => Err(format!("\"and\" may only be called on bool values."))
+    for arg in args {
+        match arg {
+            &Bool(b) => if !b {
+                return ok(false);
+            },
+            _ => return err(format!("{} is not a bool.", arg))
+        }
     }
+
+    ok(true)
 }
 
 /// `apply : (A... -> B) [A] -> B`
