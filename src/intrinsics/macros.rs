@@ -41,9 +41,9 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
                     Err(format!("Cannot redefine empty list."))
                 } else {
                     let ident = (&vals[0]).clone();
-                    let params = (&vals[1..]).iter()
+                    let params: Vec<_> = (&vals[1..]).iter()
                         .map(|expr| expr.clone())
-                        .collect::<Vec<_>>();
+                        .collect();
                     let body = val.clone();
 
                     let define = List(vec![
@@ -75,7 +75,7 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
 
     let (params, body) = (&exprs[1], &exprs[2]);
     match params {
-        &SExpr::List(ref params) => {
+        &List(ref params) => {
             let len = params.len();
             let last = len - 1;
             let mut names = Vec::<String>::with_capacity(len);
@@ -134,8 +134,8 @@ pub fn _cond(env: Env, exprs: Exprs) -> Output {
     env.enter_scope();
     env.define("else", Value::Bool(true));
     for condition in conditions.iter() {
-        match *condition {
-            SExpr::List(ref vals) => {
+        match condition {
+            &List(ref vals) => {
                 let len = vals.len();
                 match len {
                     2 => {
