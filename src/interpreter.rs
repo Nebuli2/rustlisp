@@ -4,7 +4,7 @@ use sexpr::SExpr::*;
 use errors::*;
 use environment::Environment;
 
-pub type FuncResult = Result<Value, String>;
+pub type FuncResult = Result<Value>;
 pub type Intrinsic = fn(&mut Environment, &[Value]) -> FuncResult;
 pub type Macro = fn(&mut Environment, &[SExpr]) -> FuncResult;
 
@@ -13,14 +13,14 @@ pub fn empty() -> Value {
 }
 
 pub trait Eval {
-    fn eval(&self, &mut Environment) -> Result<Value, String>;
+    fn eval(&self, &mut Environment) -> Result<Value>;
 }
 
 const SUPER: &'static str = "#super:";
 const SUPER_LEN: usize = 7;
 
 impl Eval for SExpr {
-    fn eval(&self, env: &mut Environment) -> Result<Value, String> {
+    fn eval(&self, env: &mut Environment) -> Result<Value> {
         match self {
             // Primitives map directly
             &Num(n) => Ok(Value::Num(n)),
@@ -119,7 +119,7 @@ impl Eval for SExpr {
     }
 }
 
-pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value, String> {
+pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value> {
     match *func {
         Value::Func(ref params, ref body, variadic) => {
             env.enter_scope();

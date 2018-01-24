@@ -53,7 +53,7 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
 
 /// Runs a REPL for the specified environment.
 pub fn run(env: &mut Environment) {
-    let prompt = format!("> ");
+    let prompt = format!("{}> ", user_name());
     loop {
         print_prompt(&prompt).expect("Failed to print prompt.");
         if let Ok(line) = read_input_line() {

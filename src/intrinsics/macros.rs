@@ -3,7 +3,7 @@ use super::*;
 use SExpr::*;
 
 /// Represents the output of a function.
-type Output = Result<Value, String>;
+type Output = Result<Value>;
 
 /// Represents a mutable reference to an environment.
 type Env<'a> = &'a mut Environment;
@@ -77,12 +77,11 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
     match params {
         &List(ref params) => {
             let len = params.len();
-            let last = len - 1;
             let mut names = Vec::<String>::with_capacity(len);
             for (i, param) in params.iter().enumerate() {
                 match param {
                     &SExpr::Ident(ref s, variadic) => {
-                        if variadic && i != last {
+                        if variadic && i != len - 1 {
                             return err("Only the final parameter of a function may be variadic.")
                         }
                         names.push(s.to_string())
@@ -90,10 +89,14 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
                     _ => return err(not_an_identifier(param))
                 }
             }
-            let variadic = if let &SExpr::Ident(_, v) = &params[last] {
-                v
+            let variadic = if len > 0 {
+                if let &SExpr::Ident(_, v) = &params[len - 1] {
+                    v
+                } else {
+                    false
+                }
             } else {
-                false
+                false   
             };
             Ok(Value::Func(names, body.clone(), variadic))
         },

@@ -1,11 +1,15 @@
 use super::*;
 use Value::*;
 use parser::Parser;
-use std::io::BufReader;
-use std::io::Read;
+use std::io::{ 
+    stdout, 
+    BufReader, 
+    Read, 
+    Write 
+};
 
 /// Represents the output of a function.
-type Output = Result<Value, String>;
+type Output = Result<Value>;
 
 /// Represents a mutable reference to an environment.
 type Env<'a> = &'a mut Environment;
@@ -36,6 +40,17 @@ pub fn _exit(_: Env, args: Args) -> Output {
 /// 
 /// Prints the specified values to the standard output.
 pub fn _print(env: Env, args: Args) -> Output {
+    let out = _concat(env, args)?;
+    if let Str(ref s) = out {
+        print!("{}", s);
+        stdout().flush().expect("Failed to flush stdin.");
+        ok(nil())
+    } else {
+        err("Unknown failure.")
+    }
+}
+
+pub fn _println(env: Env, args: Args) -> Output {
     let out = _concat(env, args)?;
     if let Str(ref s) = out {
         println!("{}", s);
@@ -586,7 +601,7 @@ pub fn _eval(env: Env, args: Args) -> Output {
 
 /// Produces an error if the number of arguments found doesn't match the
 /// number of arguments expected.
-fn check_arity(expected: usize, found: usize) -> Result<(), String> {
+fn check_arity(expected: usize, found: usize) -> Result<()> {
     if found != expected {
         Err(arity_exact(expected, found))
     } else {
@@ -609,20 +624,19 @@ enum StrSection<'a> {
     Expr(&'a str)
 }
 
-fn split_str(s: &str) -> Result<Vec<StrSection>, String> {
+
+fn split_str(s: &str) -> Result<Vec<StrSection>> {
     use self::StrSection::*;
     let mut strs = Vec::new();
 
-    let mut enter_expr = false;
     let mut in_expr = false;
-    let mut last: usize = 0;
-    let mut i: usize = 0;
+    let mut last = 0 as usize;
+    let mut i = 0 as usize;
+    let mut last_ch = '\0';
     for ch in s.chars() {
         match ch {
-            '$' => enter_expr = true,
-            '{' if enter_expr => {
+            '{' if last_ch == '#' => {
                 strs.push(Str(&s[last..i - 1]));
-                enter_expr = false;
                 in_expr = true;
                 last = i + 1; // Begin expression after opening brace
             }
@@ -631,9 +645,10 @@ fn split_str(s: &str) -> Result<Vec<StrSection>, String> {
                 in_expr = false;
                 last = i + 1; // Begin next section after ending brace
             },
-            _ => enter_expr = false,
+            _ => ()
         }
         i += 1;
+        last_ch = ch;
     }
     if last != i {
         strs.push(Str(&s[last..i]));
@@ -684,5 +699,37 @@ pub fn _format(env: Env, args: Args) -> Output {
             ok(formatted)
         },
         _ => err(format!("{} is not a str.", format))
+    }
+}
+
+pub fn _read_line(_: Env, args: Args) -> Output {
+    check_arity(0, args.len())?;
+
+    let mut buf = String::new();
+    ::std::io::stdin().read_line(&mut buf)
+        .expect("Failed to read input");
+    let buf = buf.trim().to_string();
+
+    ok(buf)
+}
+
+pub fn _parse(env: Env, args: Args) -> Output {
+    check_arity(1, args.len())?;
+
+    let input = &args[0];
+    match input {
+        &Str(ref s) => {
+            let s = format!("'{}", s);
+            let bytes = s.as_bytes();
+            let mut reader = BufReader::new(bytes);
+            let mut parser = Parser::new();
+
+            let expr = parser.parse(&mut reader)?;
+            let val = expr.eval(env)?;
+
+            ok(val)
+        },
+
+        _ => err(format!("{} is not a str.", input))
     }
 }

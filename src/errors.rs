@@ -1,6 +1,9 @@
 use values::Value;
 use sexpr::SExpr;
 
+pub type Error = String;
+pub type Result<T> = ::std::result::Result<T, Error>;
+
 pub fn arity_at_least(expected: usize, found: usize) -> String {
     format!("Expected at least {} arg(s), found {}.", expected, found)
 }

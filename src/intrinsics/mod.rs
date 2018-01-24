@@ -118,10 +118,13 @@ impl Intrinsics for Environment {
         self.define_intrinsic("exit", functions::_exit);
         self.define_intrinsic("begin", functions::_begin);
         self.define_intrinsic("print", functions::_print);
+        self.define_intrinsic("println", functions::_println);
         self.define_intrinsic("apply", functions::_apply);
         self.define_intrinsic("concat", functions::_concat);
         self.define_intrinsic("eval", functions::_eval);
 
         self.define_intrinsic("format", functions::_format);
+        self.define_intrinsic("read-line", functions::_read_line);
+        self.define_intrinsic("parse", functions::_parse);
     }
 }

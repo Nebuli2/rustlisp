@@ -128,7 +128,58 @@
 ;; Formats the specified str according to the format function and prints the
 ;; result.
 (define (printf fmt)
-    (print (format fmt)))
+    (println (format fmt)))
 
 ;; Greeting
-(format "Welcome to ${env/lisp-name} v${env/lisp-version}.")
+(printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.")
+
+;; inc : num -> num
+;; Produces the value of x incremented by one.
+(define (inc x) 
+    (+ x 1))
+
+;; dec : num -> num
+;; Produces the value of x decremented by one.
+(define (dec x) 
+    (- x 1))
+
+;; double : num -> num
+;; Produces the value of x doubled.
+(define (double x) 
+    (* x 2))
+
+;; half : num -> num
+;; Produces the value of x halved.
+(define (half x) 
+    (/ x 2))
+
+;; square : num -> num
+;; Produces the value of the num squared.
+(define (square x) 
+    (* x x))
+
+;; range : num num -> [num]
+;; Produces a list of numbers equal to [from, to), with a step size of 1.
+(define (range from to)
+    (cond [(> to from) (cons from (range (inc from) to))]
+          [else empty]))
+
+;; range-to : num -> [num]
+;; Produces a list of numbers equal to [0, to) with a step size of 1.
+(define (range-to to)
+    (range 0 to))
+
+(define (parse-eval str)
+    (eval (parse str)))
+
+(define (run-repl) (begin
+    (printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.")
+    (repl)))
+
+(define (repl) (begin
+    (print "> ")
+    (let ([res (parse-eval (read-line))])
+        (if (not (nil? res))
+            (println res)
+            empty))
+    (repl)))
