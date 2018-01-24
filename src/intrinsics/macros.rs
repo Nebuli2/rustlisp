@@ -20,7 +20,7 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
         let (ident, val) = (&exprs[1], &exprs[2]);
         match *ident {
             // Define variable
-            SExpr::Ident(ref s) => {
+            Ident(ref s, _) => {
                 if RESERVED_WORDS.contains(&s.as_str()) {
                     Err(reserved_word(s))
                 } else {
@@ -31,32 +31,32 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
             },
 
             // Define function
-            SExpr::List(ref vals) => {
+            // Converts
+            //  (define (func-name param1 ...) body)
+            // Into:
+            //  (define func-name (lambda (param1 ...) body))
+            List(ref vals) => {
                 let len = vals.len();
                 if len == 0 {
                     Err(format!("Cannot redefine empty list."))
                 } else {
-                    let ident = &vals[0];
-                    let mut params = Vec::<String>::with_capacity(len - 1);
+                    let ident = (&vals[0]).clone();
+                    let params = (&vals[1..]).iter()
+                        .map(|expr| expr.clone())
+                        .collect::<Vec<_>>();
                     let body = val.clone();
-                    for param in &vals[1..] {
-                        match *param {
-                            SExpr::Ident(ref s) => params.push(s.clone()),
-                            _ => return Err(not_an_identifier(param))
-                        }
-                    }
-                    let func = Value::Func(params, body);
-                    match *ident {
-                        SExpr::Ident(ref s) => {
-                            if RESERVED_WORDS.contains(&s.as_str()) {
-                                Err(reserved_word(s))
-                            } else {
-                                env.define(s.clone(), func);
-                                ok(nil())
-                            }
-                        },
-                        _ => Err(not_an_identifier(ident))
-                    }
+
+                    let define = List(vec![
+                        Ident("define".to_string(), false),
+                        ident, 
+                        List(vec![
+                            Ident("lambda".to_string(), false),
+                            List(params),
+                            body
+                        ])
+                    ]);
+
+                    define.eval(env)                    
                 }
             },
             _ => Err(not_an_identifier(ident))
@@ -74,16 +74,28 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
     }
 
     let (params, body) = (&exprs[1], &exprs[2]);
-    match *params {
-        SExpr::List(ref params) => {
-            let mut names = Vec::<String>::with_capacity(params.len());
-            for param in params.iter() {
+    match params {
+        &SExpr::List(ref params) => {
+            let len = params.len();
+            let last = len - 1;
+            let mut names = Vec::<String>::with_capacity(len);
+            for (i, param) in params.iter().enumerate() {
                 match param {
-                    &SExpr::Ident(ref s) => names.push(s.to_string()),
-                    _ => return Err(not_an_identifier(param))
+                    &SExpr::Ident(ref s, variadic) => {
+                        if variadic && i != last {
+                            return err("Only the final parameter of a function may be variadic.")
+                        }
+                        names.push(s.to_string())
+                    },
+                    _ => return err(not_an_identifier(param))
                 }
             }
-            Ok(Value::Func(names, body.clone()))
+            let variadic = if let &SExpr::Ident(_, v) = &params[last] {
+                v
+            } else {
+                false
+            };
+            Ok(Value::Func(names, body.clone(), variadic))
         },
         _ => Err(not_a_list(params))
     }
@@ -179,7 +191,7 @@ pub fn _let(env: Env, exprs: Exprs) -> Output {
 
                         let binding = (&binding[0], &binding[1]);
                         match binding {
-                            (&Ident(ref s), expr) => {
+                            (&Ident(ref s, _), expr) => {
                                 let res = expr.eval(env)?;
                                 env.define(s.clone(), res);
                             },
@@ -212,7 +224,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
     } else {
         let (struct_name, struct_def) = (&exprs[1], &exprs[2]);
         match (struct_name, struct_def) {
-            (&Ident(ref name), &List(ref vals)) => {
+            (&Ident(ref name, _), &List(ref vals)) => {
                 let len = vals.len();
                 if len < 1 {
                     Err(arity_exact(1, len))
@@ -223,7 +235,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
                     // Check that all values are identifiers
                     for value in vals.iter() {
                         match value {
-                            &Ident(ref ident) => fields.push(ident.clone()),
+                            &Ident(ref ident, _) => fields.push(ident.clone()),
                             _ => return Err(not_an_identifier(value))
                         }
                     }
@@ -240,7 +252,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
                             err(::errors::arity_exact(1, len - 1))
                         } else {
                             let name = &exprs[0];
-                            if let &SExpr::Ident(ref ident) = name {
+                            if let &SExpr::Ident(ref ident, _) = name {
                                 let len = ident.len();
                                 let struct_name = &ident[..len - 1];
 
@@ -272,7 +284,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
                             if len != 1 {
                                 err(arity_exact(1, len))
                             } else {
-                                if let &SExpr::Ident(ref accessor) = accessor {
+                                if let &SExpr::Ident(ref accessor, _) = accessor {
                                     let hyphen_index = accessor.rfind('-');
                                     if let Some(i) = hyphen_index {
                                         let struct_name = &accessor[..i];
@@ -308,7 +320,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
                     env.define_macro(make, |env, exprs| {
                         let name = &exprs[0];
                         let params = &exprs[1..];
-                        if let &SExpr::Ident(ref name) = name {
+                        if let &SExpr::Ident(ref name, _) = name {
                             // Name after "make-"
                             let name = &name[5..];
 

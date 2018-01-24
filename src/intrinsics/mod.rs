@@ -88,7 +88,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("symbol?", functions::_is_symbol);
 
         // List functions
-        self.define_intrinsic("list", functions::_list);
+        // self.define_intrinsic("list", functions::_list);
         self.define_intrinsic("cons", functions::_cons);
         self.define_intrinsic("car", functions::_car);
         self.define_intrinsic("cdr", functions::_cdr);

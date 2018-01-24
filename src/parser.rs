@@ -123,7 +123,18 @@ impl Parser {
 
             // Check if valid identifier
             if s.chars().all(|c| c.is_valid_ident()) {
-                Ok(SExpr::Ident(s))
+                let ellipsis = "...";
+                let variadic = s.ends_with(ellipsis);
+                let name = if variadic {
+                    s[..s.len() - ellipsis.len()].to_string()
+                } else {
+                    s
+                };
+                if name.is_empty() {
+                    Err("Empty identifier.".to_string())
+                } else {
+                    Ok(SExpr::Ident(name, variadic))
+                }
             } else {
                 Err(format!("Invalid identifier {}.", s))
             }

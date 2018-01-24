@@ -7,9 +7,9 @@ pub enum Value {
     Num(f64),
     Bool(bool),
     Str(String),
-    Symbol(String),
+    Symbol(String, bool),
     List(Vec<Value>),
-    Func(Vec<String>, SExpr),
+    Func(Vec<String>, SExpr, bool),
     Intrinsic(Intrinsic),
     Macro(Macro),
     Struct(String, Vec<Value>)
@@ -21,7 +21,7 @@ impl From<SExpr> for Value {
             SExpr::Num(n) => Value::Num(n),
             SExpr::Bool(n) => Value::Bool(n),
             SExpr::Str(s) => Value::Str(s),
-            SExpr::Ident(s) => Value::Symbol(s),
+            SExpr::Ident(s, v) => Value::Symbol(s, v),
             SExpr::List(vals) => Value::List(  
                 vals.into_iter().map(|expr| expr.into()).collect()
             ),
@@ -37,13 +37,13 @@ impl Into<SExpr> for Value {
             Value::Num(n) => SExpr::Num(n),
             Value::Bool(n) => SExpr::Bool(n),
             Value::Str(s) => SExpr::Str(s),
-            Value::Symbol(s) => SExpr::Ident(s),
+            Value::Symbol(s, v) => SExpr::Ident(s, v),
             Value::List(vals) => SExpr::List(
                 vals.into_iter().map(|expr| expr.into()).collect()
             ),
             Value::Struct(ref name, ref fields) => {
                 let mut exprs: Vec<SExpr> = Vec::with_capacity(fields.len() + 1);
-                exprs.push(SExpr::Ident(format!("make-{}", name)));
+                exprs.push(SExpr::Ident(format!("make-{}", name), false));
                 for field in fields {
                     exprs.push(field.clone().into());
                 }
@@ -79,8 +79,12 @@ impl fmt::Display for Value {
             },
 
             // 'symbol
-            &Symbol(ref s) => {
-                write!(f, "{}", s)
+            &Symbol(ref s, v) => {
+                write!(f, "{}", s)?;
+                if v {
+                    write!(f, "...")?;
+                }
+                Ok(())
             }
 
             // (a b c ...)
@@ -98,7 +102,7 @@ impl fmt::Display for Value {
             },
 
             // (lambda (params ...) body)
-            &Func(ref args, ref body) => {
+            &Func(ref args, ref body, variadic) => {
                 // Write lambda 
                 write!(f, "(lambda (")?;
 
@@ -108,6 +112,9 @@ impl fmt::Display for Value {
                         write!(f, "{} ", &args[i])?;
                     }
                     write!(f, "{}", &args[args.len() - 1])?;  
+                    if variadic {
+                        write!(f, "...")?;
+                    }
                 }
 
                 // Write body
@@ -180,7 +187,7 @@ impl PartialEq for Value {
             (&Num(a), &Num(b)) => a == b,
             (&Bool(a), &Bool(b)) => a == b,
             (&Str(ref a), &Str(ref b)) => a == b,
-            (&Symbol(ref a), &Symbol(ref b)) => a == b,
+            (&Symbol(ref a, av), &Symbol(ref b, bv)) => a == b && av == bv,
             (&List(ref a), &List(ref b)) => {
                 if a.len() == b.len() {
                     for i in 0..a.len() {

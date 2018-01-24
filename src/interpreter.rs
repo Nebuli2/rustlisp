@@ -20,7 +20,7 @@ const SUPER: &'static str = "#super:";
 const SUPER_LEN: usize = 7;
 
 impl Eval for SExpr {
-    fn eval(&self, ctx: &mut Environment) -> Result<Value, String> {
+    fn eval(&self, env: &mut Environment) -> Result<Value, String> {
         match self {
             // Primitives map directly
             &Num(n) => Ok(Value::Num(n)),
@@ -28,7 +28,7 @@ impl Eval for SExpr {
             &Str(ref s) => Ok(Value::Str(s.clone())),
 
             // Fetch value of identifier in context
-            &Ident(ref s) => {
+            &Ident(ref s, variadic) => {
                 // Previous scope if identifier begins with "super:"
                 let index = s.find(SUPER);
                 let contains_super = match index {
@@ -42,9 +42,9 @@ impl Eval for SExpr {
                 };
 
                 let res = if contains_super {
-                    ctx.get_super(ident)
+                    env.get_super(ident)
                 } else {
-                    ctx.get(ident)
+                    env.get(ident)
                 };
 
                 match res {
@@ -59,42 +59,48 @@ impl Eval for SExpr {
                 if vals.is_empty() {
                     Ok(empty())
                 } else {
-                    let func = vals[0].eval(ctx)?;
+                    let func = vals[0].eval(env)?;
                     match func {
-                        Value::Func(params, expr) => {
-
-                            ctx.enter_scope();
-                            
-                            let params_len = params.len();
-                            let args_len = vals.len() - 1;
-
-                            if params_len != args_len {
-                                return Err(arity_exact(params_len, args_len));
+                        Value::Func(_, _, _) => {
+                            let mut args = Vec::<Value>::with_capacity(vals.len() - 1);
+                            for param in &vals[1..] {
+                                let arg = param.eval(env)?;
+                                args.push(arg);
                             }
+                            eval_func(&func, &args, env)
 
-                            for i in 0..params.len() {
-                                let val = &vals[i + 1];
-                                let res = val.eval(ctx)?;
-                                ctx.define(params[i].clone(), res);
-                            }
+                            // ctx.enter_scope();
+                            
+                            // let params_len = params.len();
+                            // let args_len = vals.len() - 1;
+
+                            // if params_len != args_len {
+                            //     return Err(arity_exact(params_len, args_len));
+                            // }
+
+                            // for i in 0..params.len() {
+                            //     let val = &vals[i + 1];
+                            //     let res = val.eval(ctx)?;
+                            //     ctx.define(params[i].clone(), res);
+                            // }
 
                             
-                            let res = expr.eval(ctx);
-                            ctx.exit_scope();
-                            res
+                            // let res = expr.eval(ctx);
+                            // ctx.exit_scope();
+                            // res
                         },
                         Value::Intrinsic(ref func) => {
                             let mut args: Vec<Value> = vec![];
 
                             for arg in &vals[1..] {
-                                let eval = arg.eval(ctx)?;
+                                let eval = arg.eval(env)?;
                                 args.push(eval);
                             }
 
-                            func(ctx, &args)
+                            func(env, &args)
                         },
                         Value::Macro(ref func) => {
-                            func(ctx, vals)
+                            func(env, vals)
                         }
                         _ => Err(not_a_function(&func))
                     }
@@ -115,19 +121,46 @@ impl Eval for SExpr {
 
 pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value, String> {
     match *func {
-        Value::Func(ref params, ref body) => {
+        Value::Func(ref params, ref body, variadic) => {
             env.enter_scope();
 
             let params_len = params.len();
-            let args_len = args.len() - 1;
+            let args_len = args.len();
 
-            if params_len != args_len {
-                return Err(arity_exact(params_len, args_len));
+            // Check arity
+            if variadic {
+                // Variadic parameter does not need to be filled
+                if params_len - 1 > args_len {
+                    return Err(arity_at_least(params_len - 1, args_len));
+                }
+            } else {
+                if params_len != args_len {
+                    return Err(arity_exact(params_len, args_len));
+                }
             }
 
-            for i in 0..params.len() {
-                let val = &args[i + 1];
-                env.define(params[i].clone(), val.clone());
+            if variadic {
+                for i in 0..params_len - 1 {
+                    let val = &args[i];
+                    env.define(params[i].clone(), val.clone());
+                }
+
+                let variadic_arg = if args_len >= params_len {
+                    let mut variadic_arg = Vec::<Value>::with_capacity(args_len - params_len + 1);
+                    for extra_arg in &args[params_len - 1..] {
+                        variadic_arg.push(extra_arg.clone());
+                    }
+                    variadic_arg
+                } else {
+                    Vec::new()
+                };
+                
+                env.define(params[params_len - 1].clone(), Value::List(variadic_arg));
+            } else {
+                for i in 0..params_len {
+                    let val = &args[i];
+                    env.define(params[i].clone(), val.clone());
+                }
             }
 
                             

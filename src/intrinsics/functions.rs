@@ -233,7 +233,7 @@ pub fn _is_symbol(_: Env, args: Args) -> Output {
 
     let arg = &args[0];
     match arg {
-        &Symbol(_) => ok(true),
+        &Symbol(_, _) => ok(true),
         _ => ok(false)
     }
 }
@@ -260,7 +260,7 @@ pub fn _is_lambda(_: Env, args: Args) -> Output {
     let arg = &args[0];
     match arg {
         &Intrinsic(_) => ok(true),
-        &Func(_, _) => ok(true),
+        &Func(_, _, _) => ok(true),
         _ => ok(false)
     }
 }
@@ -512,7 +512,7 @@ pub fn _apply(env: Env, args: Args) -> Output {
 
     let (func, args) = (&args[0], &args[1]);
     match (func, args) {
-        (&Func(_, _), &List(ref list)) => eval_func(func, &list, env),
+        (&Func(_, _, _), &List(ref list)) => eval_func(func, &list, env),
         (&Intrinsic(func), &List(ref list)) => func(env, list),
         _ => Err(format!("Contract not satisfied: {} {}.", func, args))
     }
@@ -599,7 +599,7 @@ fn split_str(s: &str) -> Result<Vec<StrSection>, String> {
                 in_expr = false;
                 last = i + 1; // Begin next section after ending brace
             },
-            _ => ()
+            _ => enter_expr = false,
         }
         i += 1;
     }

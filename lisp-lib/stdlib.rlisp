@@ -112,73 +112,23 @@
             (fib (- n 1)) 
             (fib (- n 2)))]))
 
-(define (printf fmt)
-    (print (format fmt)))
-
-;; Greeting
-(printf "Welcome to ${lisp-name} v${lisp-version}.")
-
-;; make-point : num num -> point
-;; point-x : point -> num
-;; point-y : point -> num
-;; A point represents a pair of numeric coordinates named "x" and "y".
-(define-struct point [x y])
-
-;; point-add : point point -> point
-;; Determines the sum of two points, where the sum is the point whose
-;; coordinates are equal to the two points' corresponding coordinates added
-;; together.
-(define (point-add p1 p2)
-    (make-point
-        (+ (point-x p1) (point-x p2))
-        (+ (point-y p1) (point-y p2))))
-
-;; point-disp : point -> str
-;; Produces a str representation of a point in the form "(x, y)".
-(define (point-disp pt)
-    (concat "(" (point-x pt) ", " (point-y pt) ")"))
-
-;; point-dist : point point -> num
-;; Calculates the distance between the two specified points.
-(define (point-dist p1 p2)
-    (let ([dx (- (point-x p1) (point-x p2))]
-          [dy (- (point-y p1) (point-y p2))])
-        (sqrt (+ (* dx dx) (* dy dy)))))
-
-
-;; displayable = num
-;;             | bool
-;;             | str
-;;             | symbol
-;;             | [displayable]
-;;             | lambda
-;;             | point
-
-;; disp : displayable -> nil
-(define (disp val)
-    (cond [(point? val) (point-disp val)]
-          [else (concat val)]))
-
-(define (contains? lst elem)
-    (cond [(empty? lst) #f]
-          [(eq? (car lst) elem) #t]
-          [else (contains? (cdr lst) elem)]))
-
-(define (point-square pt)
-    (let ([x (point-x pt)]
-          [y (point-y pt)])
-        (make-point
-            (* x x)
-            (* y y))))
-
+;; nil? : A -> bool
+;; Determines whether or not the specified value is nil, the empty list.
 (define (nil? val)
     (if (cons? val)
         (empty? val)
         #f))
 
-(define (nums-to num)
-    (if (<= num 0) 
-        empty
-        (cons num (nums-to (- num 1)))))
+;; list : A... -> [A]
+;; Wraps all arguments passed to this function in a list.
+(define (list vals...)
+    vals)
 
+;; printf : str -> nil
+;; Formats the specified str according to the format function and prints the
+;; result.
+(define (printf fmt)
+    (print (format fmt)))
 
+;; Greeting
+(printf "Welcome to ${lisp-name} v${lisp-version}.")

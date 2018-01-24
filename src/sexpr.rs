@@ -6,7 +6,7 @@ pub enum SExpr {
     Str(String),
     Num(f64),
     Bool(bool),
-    Ident(String),
+    Ident(String, bool),
     List(Vec<SExpr>),
     Quote(Box<SExpr>),
     Nil
@@ -29,7 +29,13 @@ impl fmt::Display for SExpr {
             }
 
             // ident
-            Ident(ref s) => write!(f, "{}", s),
+            Ident(ref s, variadic) => {
+                write!(f, "{}", s)?;
+                if variadic {
+                    write!(f, "...")?;
+                }
+                Ok(())
+            },
 
             // (a b c ...)
             List(ref exps) => {
