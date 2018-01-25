@@ -8,6 +8,8 @@ use std::io::{
     Write 
 };
 
+use std::process::exit;
+
 /// Represents the output of a function.
 type Output = Result<Value>;
 
@@ -33,7 +35,7 @@ pub fn _exit(_: Env, args: Args) -> Output {
         }
         n => return Err(arity_at_most(1, n))
     };
-    ::std::process::exit(ecode);
+    exit(ecode);
 }
 
 /// `print : A... -> nil`
