@@ -1,5 +1,5 @@
-use values::Value;
-use sexpr::SExpr;
+use interpreter::Value;
+use parser::SExpr;
 
 pub type Error = String;
 pub type Result<T> = ::std::result::Result<T, Error>;

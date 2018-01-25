@@ -735,3 +735,25 @@ pub fn _parse(env: Env, args: Args) -> Output {
         _ => err(format!("{} is not a str.", input))
     }
 }
+
+fn fib(n: u64) -> u64 {
+    match n {
+        0 | 1 => n,
+        n => fib(n - 1) + fib(n - 2)
+    }
+}
+
+pub fn _fib_rust(_: Env, args: Args) -> Output {
+    check_arity(1, args.len())?;
+
+    let n = &args[0];
+    match n {
+        &Num(n) => {
+            let n = n as u64;
+            let res = fib(n);
+            let res = res as f64;
+            ok(res)
+        },
+        _ => err(not_a_number(n))
+    }
+}

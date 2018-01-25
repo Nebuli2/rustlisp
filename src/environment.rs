@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use values::Value;
+use interpreter::Value;
 
 type Scope = HashMap<String, Value>;
 type StructFields = Vec<String>;

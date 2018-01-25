@@ -1,6 +1,7 @@
-use values::*;
+pub mod value;
+
+pub use value::*;
 use sexpr::SExpr;
-use sexpr::SExpr::*;
 use errors::*;
 use environment::Environment;
 
@@ -23,12 +24,12 @@ impl Eval for SExpr {
     fn eval(&self, env: &mut Environment) -> Result<Value> {
         match self {
             // Primitives map directly
-            &Num(n) => Ok(Value::Num(n)),
-            &Bool(b) => Ok(Value::Bool(b)),
-            &Str(ref s) => Ok(Value::Str(s.clone())),
+            &SExpr::Num(n) => Ok(Value::Num(n)),
+            &SExpr::Bool(b) => Ok(Value::Bool(b)),
+            &SExpr::Str(ref s) => Ok(Value::Str(s.clone())),
 
             // Fetch value of identifier in context
-            &Ident(ref s, variadic) => {
+            &SExpr::Ident(ref s, variadic) => {
                 // Previous scope if identifier begins with "super:"
                 let index = s.find(SUPER);
                 let contains_super = match index {
@@ -55,7 +56,7 @@ impl Eval for SExpr {
 
             // Evaluate first element of the list, then apply subsequent
             // elements to the first element if it is a function.
-            &List(ref vals) => {
+            &SExpr::List(ref vals) => {
                 if vals.is_empty() {
                     Ok(empty())
                 } else {
@@ -108,7 +109,7 @@ impl Eval for SExpr {
             },
 
             // Quoted expression
-            &Quote(ref expr) => {
+            &SExpr::Quote(ref expr) => {
                 let r = expr.as_ref().clone();
                 Ok(r.into())
             }

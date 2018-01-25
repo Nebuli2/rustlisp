@@ -1,5 +1,10 @@
-use std::io::{BufReader, Read};
-use sexpr::SExpr;
+pub mod sexpr;
+
+use std::io::{
+    BufReader, 
+    Read
+};
+pub use sexpr::*;
 
 pub struct Parser {
     stack: Vec<char>

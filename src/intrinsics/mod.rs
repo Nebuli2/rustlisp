@@ -1,7 +1,6 @@
 use interpreter::*;
-use sexpr::SExpr;
+use parser::SExpr;
 use errors::*;
-use values::*;
 use environment::*;
 
 mod macros;
@@ -50,7 +49,7 @@ impl Intrinsics for Environment {
     }
 
     fn init_intrinsics(&mut self) {
-        use values::Value::*;
+        use self::Value::*;
 
         // Constants
         self.define("empty", nil());
@@ -84,6 +83,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("sqrt", functions::_sqrt);
         self.define_intrinsic("pow", functions::_pow);
         self.define_intrinsic("log", functions::_log);
+        self.define_intrinsic("fibonacci", functions::_fib_rust);
 
         // Type checking functions
         self.define_intrinsic("num?", functions::_is_num);

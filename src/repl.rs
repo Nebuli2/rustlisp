@@ -5,9 +5,7 @@ use color;
 use environment::*;
 use parser::*;
 use utils::*;
-use sexpr::*;
 use interpreter::*;
-use values::*;
 
 fn read_input_line() -> Result<String, Error> {
     let mut buf = String::new();

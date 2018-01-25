@@ -1,4 +1,5 @@
-use sexpr::*;
+use super::*;
+use interpreter::SExpr;
 use interpreter::*;
 use std::fmt;
 
@@ -167,13 +168,13 @@ impl Into<Value> for String {
 }
 
 /// Wrap the specified value in an `Ok`.
-pub fn ok<T>(val: T) -> Result<Value, String> 
+pub fn ok<T>(val: T) -> ::std::result::Result<Value, String> 
     where T: Into<Value> 
 {
     Ok(val.into())
 }
 
-pub fn err<T>(msg: T) -> Result<Value, String>
+pub fn err<T>(msg: T) -> ::std::result::Result<Value, String>
     where T: Into<String>
 {
     Err(msg.into())
