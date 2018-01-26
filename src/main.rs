@@ -26,9 +26,8 @@ fn main() {
 
     // Read library
     let _ = File::open("lisp-lib/stdlib.rlisp").map(|f| {
-        let mut reader = BufReader::new(f);
-        let mut parser = Parser::new();
-        let parsed = parser.parse_all(&mut reader)
+        let mut parser = Parser::new(BufReader::new(f));
+        let parsed = parser.parse_all()
             .unwrap_or_else(|err| {
                 let message = format!("ERROR: {}", err);
                 println!("{}", (message));

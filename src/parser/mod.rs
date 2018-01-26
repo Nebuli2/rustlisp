@@ -6,17 +6,19 @@ use std::io::{
 };
 pub use sexpr::*;
 
-pub struct Parser {
-    stack: Vec<char>
+pub struct Parser<R: Read> {
+    stack: Vec<char>,
+    reader: BufReader<R>
 }
 
 type Parse = Result<SExpr, String>;
 
-impl Parser {
+impl<R: Read> Parser<R> {
 
-    pub fn new() -> Parser {
+    pub fn new(reader: BufReader<R>) -> Self {
         Parser {
-            stack: vec![]
+            stack: vec![],
+            reader
         }
     }
 
@@ -25,11 +27,11 @@ impl Parser {
     //     self.parse(&mut buf)
     // }
 
-    pub fn parse_all<R: Read>(&mut self, r: &mut BufReader<R>) -> Result<Vec<SExpr>, String> {
+    pub fn parse_all(&mut self) -> Result<Vec<SExpr>, String> {
         let mut results: Vec<SExpr> = vec![];
 
         loop {
-            match self.parse(r) {
+            match self.parse() {
                 Ok(expr) => results.push(expr),
                 Err(why) => {
                     if why == "EOF" {
@@ -45,9 +47,9 @@ impl Parser {
     }
 
     /// Skips the parser forward until a linebreak is reached.
-    fn skip_to_linebreak<R: Read>(&mut self, r: &mut BufReader<R>) {
+    fn skip_to_linebreak(&mut self) {
         loop {
-            match self.next_char(r) {
+            match self.next_char() {
                 Some(c) if c == '\n' => break,
                 Some(_) => continue,
                 None => break
@@ -57,26 +59,26 @@ impl Parser {
 
     /// Produces the next expression from the reader, or an error if one is not
     /// found.
-    pub fn parse<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
+    pub fn parse(&mut self) -> Parse {
         loop {
-            match self.next_char(r) {
+            match self.next_char() {
                 Some(c) if c.is_whitespace() => continue,
                 Some(c) => match c {
                     ';' => {
-                        self.skip_to_linebreak(r);
-                        return self.parse(r)
+                        self.skip_to_linebreak();
+                        return self.parse()
                     }
                     '\'' => {
-                        let quoted = self.parse(r)?;
+                        let quoted = self.parse()?;
                         let quoted = SExpr::Quote(Box::new(quoted));
                         return Ok(quoted)
                     },
-                    '(' => return self.parse_list(r, ')'),
-                    '[' => return self.parse_list(r, ']'),
-                    '"' => return self.parse_str(r),
+                    '(' => return self.parse_list(')'),
+                    '[' => return self.parse_list(']'),
+                    '"' => return self.parse_str(),
                     c => {
                         self.undo_char(c);
-                        return self.parse_atom(r);
+                        return self.parse_atom();
                     }
                 },
                 None => return Err("EOF".to_string())
@@ -84,10 +86,10 @@ impl Parser {
         }
     }
 
-    fn read_atom<R: Read>(&mut self, r: &mut BufReader<R>) -> Option<String> {
+    fn read_atom(&mut self) -> Option<String> {
         let mut buf = String::new();
 
-        while let Some(c) = self.next_char(r) {
+        while let Some(c) = self.next_char() {
             if !c.is_valid_atom() {
                 self.undo_char(c);
                 break;
@@ -108,8 +110,8 @@ impl Parser {
         }
     }
 
-    fn parse_atom<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
-        let atom = self.read_atom(r);
+    fn parse_atom(&mut self) -> Parse {
+        let atom = self.read_atom();
         if let Some(s) = atom {
             // Check true
             if s == "#t" || s == "true" {
@@ -148,13 +150,13 @@ impl Parser {
         }
     }
 
-    fn parse_str<R: Read>(&mut self, r: &mut BufReader<R>) -> Parse {
+    fn parse_str(&mut self) -> Parse {
         let mut buf = String::new();
 
         // Read chars until closing quotes. If the end of the buffer is reached
         // before a closing quote has been reached, None is returned.
         loop {
-            match self.next_char(r) {
+            match self.next_char() {
                 Some(c) if c == '"' => break,
                 Some(c) => buf.push(c),
                 None => return Err("Unexpected EOF before end of string.".to_string())
@@ -164,18 +166,18 @@ impl Parser {
         Ok(SExpr::Str(buf))
     }
 
-    fn parse_list<R: Read>(&mut self, r: &mut BufReader<R>, close: char) -> Parse {
+    fn parse_list(&mut self, close: char) -> Parse {
         let mut buf: Vec<SExpr> = vec![];
 
         loop {
-            match self.next_char(r) {
+            match self.next_char() {
                 Some(c) if c.is_whitespace() => continue,
                 Some(c) if c == close => {
                     break;
                 },
                 Some(c) => {
                     self.undo_char(c);
-                    let exp = self.parse(r)?;
+                    let exp = self.parse()?;
                     buf.push(exp);
                 },
                 None => return Err("Unexpected EOF before end of list.".to_string())
@@ -185,10 +187,10 @@ impl Parser {
         Ok(SExpr::List(buf))
     }
 
-    fn next_char<R: Read>(&mut self, r: &mut BufReader<R>) -> Option<char> {
+    fn next_char(&mut self) -> Option<char> {
         if self.stack.is_empty() {
             let mut buf: [u8; 1] = [0];
-            match r.read(&mut buf) {
+            match self.reader.read(&mut buf) {
                 Ok(n) => match n {
                     1 => (), // Read one char as expected
                     _ => return None

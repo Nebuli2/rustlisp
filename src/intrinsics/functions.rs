@@ -672,11 +672,11 @@ fn format_str(env: Env, sections: &[StrSection]) -> Output {
         match section {
             &Str(s) => buf.push_str(s),
             &Expr(s) => {
-                let mut parser = Parser::new();
-                let mut reader = BufReader::new(s.as_bytes());
+                let reader = BufReader::new(s.as_bytes());
+                let mut parser = Parser::new(reader);
 
                 // Get contents
-                let expr = parser.parse(&mut reader)?;
+                let expr = parser.parse()?;
                 env.enter_scope();
                 let res = expr.eval(env)?;
                 env.exit_scope();
@@ -723,10 +723,9 @@ pub fn _parse(env: Env, args: Args) -> Output {
         &Str(ref s) => {
             let s = format!("'{}", s);
             let bytes = s.as_bytes();
-            let mut reader = BufReader::new(bytes);
-            let mut parser = Parser::new();
+            let mut parser = Parser::new(BufReader::new(bytes));
 
-            let expr = parser.parse(&mut reader)?;
+            let expr = parser.parse()?;
             let val = expr.eval(env)?;
 
             ok(val)

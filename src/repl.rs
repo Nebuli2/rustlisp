@@ -14,11 +14,10 @@ fn read_input_line() -> Result<String, Error> {
 }
 
 fn parse_line<S: AsRef<str>>(line: S) -> Result<Vec<SExpr>, String> {
-    let mut parser = Parser::new();
     let bytes = line.as_ref().as_bytes();
-    let mut reader = BufReader::new(bytes);
+    let mut parser = Parser::new(BufReader::new(bytes));
     
-    parser.parse_all(&mut reader)
+    parser.parse_all()
 }
 
 pub fn print_prompt<S: AsRef<str>>(prompt: S) -> io::Result<()> {
