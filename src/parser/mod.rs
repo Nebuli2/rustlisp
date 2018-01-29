@@ -157,8 +157,29 @@ impl<R: Read> Parser<R> {
         // before a closing quote has been reached, None is returned.
         loop {
             match self.next_char() {
+                // Stop if a closing quote is reached
                 Some(c) if c == '"' => break,
+
+                // Push next character if it is escaped
+                Some(c) if c == '\\' => {
+                    if let Some(c) = self.next_char() {
+                        let escape = match c {
+                            'n' => '\n',
+                            'r' => '\r',
+                            't' => '\t',
+                            '\"' => '\"',
+                            '0' => '\0',
+                            '\\' => '\\',
+                            c => return Err(format!("Unknown escape character '\\{}'.", c))
+                        };
+                        buf.push(escape);
+                    }
+                },
+
+                // Otherwise push the character
                 Some(c) => buf.push(c),
+
+                // Throw an error if the string is unclosed
                 None => return Err("Unexpected EOF before end of string.".to_string())
             }
         }
@@ -209,24 +230,19 @@ impl<R: Read> Parser<R> {
     }
 }
 
-trait ValidAtom {
+trait ValidParse {
     fn is_valid_atom(&self) -> bool;
-}
-
-trait ValidIdent {
     fn is_valid_ident(&self) -> bool;
 }
 
-impl ValidAtom for char {
+impl ValidParse for char {
     fn is_valid_atom(&self) -> bool {
         match *self {
             '(' | '[' | ')' | ']' => false,
             _ => true
         }
     }
-}
 
-impl ValidIdent for char {
     fn is_valid_ident(&self) -> bool {
         match *self {
             '-' | '_' | '+' | '/' | '*' |

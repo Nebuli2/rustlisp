@@ -1,7 +1,7 @@
 pub mod value;
 
 pub use value::*;
-use sexpr::SExpr;
+use parser::SExpr;
 use errors::*;
 use environment::Environment;
 

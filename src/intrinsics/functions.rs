@@ -4,7 +4,6 @@ use parser::Parser;
 use std::io::{ 
     stdout, 
     BufReader, 
-    Read, 
     Write 
 };
 
@@ -163,55 +162,38 @@ pub fn _div(_: Env, args: Args) -> Output {
     }
 }
 
+/// Produces the modulo of the two specified `f64`s.
+fn modulo(x: f64, y: f64) -> f64 {
+    x % y
+}
+
 /// `modulo : num num -> num`
 /// 
 /// Produces the modulo of the two specified nums.
 pub fn _modulo(_: Env, args: Args) -> Output {
-    check_arity(2, args.len())?;
-
-    let (a, b) = (&args[0], &args[1]);
-    match (a, b) {
-        (&Num(a), &Num(b)) => ok(a % b),
-        _ => Err(format!("\"modulo\" must be passed nums."))
-    }
+    binary_fn(args, modulo)
 }
 
 /// `sqrt : num -> num`
 /// 
 /// Produces the square root of the specified num.
 pub fn _sqrt(_: Env, args: Args) -> Output {
-    check_arity(1, args.len())?;
-
-    let a = &args[0];
-    match a {
-        &Num(a) => ok(f64::sqrt(a)),
-        _ => Err(format!("\"sqrt\" must be passed a num."))
-    }
+    unary_fn(args, f64::sqrt)
 }
 
-/// `log` has two variants:
-/// 
-/// * `log : num -> num`
-/// 
-///   Produces the natural logarithm of the specified num.
-/// 
-/// * `log : num num -> num`
+/// `log : num num -> num`
 ///   
-///   Produces the logarithm of the first specified num, using the second
-///   specified num as the base.
+/// Produces the logarithm of the first specified num, using the second
+/// specified num as the base.
 pub fn _log(_: Env, args: Args) -> Output {
-    let len = args.len();
-    match len {
-        1 => match &args[0] {
-            &Num(n) => ok(f64::ln(n)),
-            _ => err(not_a_number(&args[0]))
-        },
-        2 => match (&args[0], &args[1]) {
-            (&Num(n), &Num(base)) => ok(f64::log(n, base)),
-            _ => err("\"log\" expects two nums as arguments.")
-        },
-        _ => err(format!("Expected either 1 or 2 arguments, found {}.", len))
-    }
+    binary_fn(args, f64::log)
+}
+
+/// `ln : num -> num`
+/// 
+/// Produces the natural logarithm of the specified num.
+pub fn _ln(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::ln)
 }
 
 /// `pow : num num -> num`
@@ -219,13 +201,121 @@ pub fn _log(_: Env, args: Args) -> Output {
 /// Produces the num equal to the first num raised to the power of the
 /// second num.
 pub fn _pow(_: Env, args: Args) -> Output {
+    binary_fn(args, f64::powf)
+}
+
+/// Converts a slice of values and a function taking one `f64` into a 
+/// `Result<Value, String`. It checks that the number of arguments is equal to
+/// one.
+fn unary_fn<F>(args: Args, f: F) -> Output 
+    where F: Fn(f64) -> f64
+{
+    check_arity(1, args.len())?;
+
+    let arg = &args[0];
+    match arg {
+        &Num(x) => ok(f(x)),
+        _ => err(not_a_number(arg))
+    }
+}
+
+/// Converts a slice of values and a function taking two `f64`s into a 
+/// `Result<Value, String`. It checks that the number of arguments is equal to
+/// two.
+fn binary_fn<F>(args: Args, f: F) -> Output 
+    where F: Fn(f64, f64) -> f64
+{
     check_arity(2, args.len())?;
 
-    let args = (&args[0], &args[1]);
-    match args {
-        (&Num(a), &Num(b)) => ok(f64::powf(a, b)),
-        _ => Err(format!("\"pow\" must be passed nums."))
+    let (x, y) = (&args[0], &args[1]);
+    match (x, y) {
+        (&Num(x), &Num(y)) => ok(f(x, y)),
+        _ => err(format!("Expected (num num), found ({} {}).", x, y))
     }
+}
+
+/// `sin : num -> num`
+/// 
+/// Produces the sine of the specified num.
+pub fn _sin(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::sin)
+}
+
+/// `cos : num -> num`
+/// 
+/// Produces the cosine of the specified num.
+pub fn _cos(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::cos)
+}
+
+/// `tan : num -> num`
+/// 
+/// Produces the tangent of the specified num.
+pub fn _tan(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::tan)
+}
+
+/// `csc : num -> num`
+/// 
+/// Produces the cosecant of the specified num.
+pub fn _csc(_: Env, args: Args) -> Output {
+    unary_fn(args, |x| 1.0 / f64::cos(x))
+}
+
+/// `sec : num -> num`
+/// 
+/// Produces the secant of the specified num.
+pub fn _sec(_: Env, args: Args) -> Output {
+    unary_fn(args, |x| 1.0 / f64::cos(x))
+}
+
+/// `cot : num -> num`
+/// 
+/// Produces the cotangent of the specified num.
+pub fn _cot(_: Env, args: Args) -> Output {
+    unary_fn(args, |x| 1.0 / f64::tan(x))
+}
+
+/// `asin : num -> num`
+/// 
+/// Produces the inverse sine of the specified num.
+pub fn _asin(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::asin)
+}
+
+/// `acos : num -> num`
+/// 
+/// Produces the inverse cosine of the specified num.
+pub fn _acos(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::acos)
+}
+
+/// `atan : num -> num`
+/// 
+/// Produces the inverse tangent of the specified num.
+pub fn _atan(_: Env, args: Args) -> Output {
+    unary_fn(args, f64::atan)
+}
+
+/// `atan2 : num num -> num`
+/// 
+pub fn _atan2(_: Env, args: Args) -> Output {
+    binary_fn(args, f64::atan2)
+}
+
+pub fn load_trig_fns(env: Env) {
+    use super::Intrinsics;
+
+    env.define_intrinsic("sin", _sin);
+    env.define_intrinsic("cos", _cos);
+    env.define_intrinsic("tan", _tan);
+    env.define_intrinsic("csc", _csc);
+    env.define_intrinsic("sec", _sec);
+    env.define_intrinsic("cot", _cot);
+    env.define_intrinsic("asin", _asin);
+    env.define_intrinsic("acos", _acos);
+    env.define_intrinsic("atan", _atan);
+    env.define_intrinsic("atan2", _atan2);
 }
 
 /// `num? : A -> bool`
@@ -305,6 +395,15 @@ pub fn _is_lambda(_: Env, args: Args) -> Output {
         &Func(_, _, _) => ok(true),
         _ => ok(false)
     }
+}
+
+pub fn load_checks(env: Env) {
+    env.define_intrinsic("num?", _is_num);
+    env.define_intrinsic("bool?", _is_num);
+    env.define_intrinsic("str?", _is_str);
+    env.define_intrinsic("symbol?", _is_symbol);
+    env.define_intrinsic("cons?", _is_cons);
+    env.define_intrinsic("lambda?", _is_lambda);
 }
 
 /// `list : A... -> [A]`
@@ -754,5 +853,43 @@ pub fn _fib_rust(_: Env, args: Args) -> Output {
             ok(res)
         },
         _ => err(not_a_number(n))
+    }
+}
+
+use std::fs::File;
+
+/// `run-file : str... -> A`
+/// Opens and runs the specified file.
+pub fn _include(env: Env, args: Args) -> Output {
+    let mut vals = Vec::<Value>::new();
+    for arg in args {
+        if let &Str(ref file_name) = arg {
+            if let Ok(file) = File::open(file_name) {
+                let reader = BufReader::new(file);
+                let mut parser = Parser::new(reader);
+                match parser.parse_all() {
+                    Ok(ref exprs) => {
+                        for expr in exprs {
+                            match expr.eval(env) {
+                                Ok(val) => vals.push(val),
+                                Err(why) => return Err(why)
+                            }
+                        }
+                    },
+                    Err(why) => return Err(why)
+                }
+
+            } else {
+                return err(format!("Could not open file {}.", file_name));
+            }
+        } else {
+            return err(format!("{} is not a str.", arg));
+        }
+    }
+
+    if let Some(last) = vals.last() {
+        Ok(last.clone())
+    } else {
+        Ok(nil())
     }
 }

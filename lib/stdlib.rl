@@ -128,10 +128,7 @@
 ;; Formats the specified str according to the format function and prints the
 ;; result.
 (define (printf fmt)
-    (println (format fmt)))
-
-;; Greeting
-(printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.")
+    (print (format fmt)))
 
 ;; inc : num -> num
 ;; Produces the value of x incremented by one.
@@ -183,3 +180,11 @@
             (println res)
             empty))
     (repl)))
+
+(define (factorial n)
+    (if (> n -1)
+        (apply * (map inc (range-to n)))
+        -1))
+
+(define (reload)
+    (include "lib/main.rl"))

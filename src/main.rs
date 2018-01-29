@@ -11,42 +11,37 @@ mod repl;
 
 use parser::*;
 use interpreter::*;
-use intrinsics::Intrinsics;
+use intrinsics::{ Intrinsics, functions };
 use environment::Environment;
-use repl::*;
 
-use std::io::BufReader;
-use std::fs::File;
+const MAIN_FILE: &'static str = "lib/main.rl";
 
-fn main() {
-
+fn init(env: &mut Environment) -> Result<(), String> {
     // Create context
-    let mut env = Environment::new();
     env.init_intrinsics();
 
-    // Read library
-    let _ = File::open("lisp-lib/stdlib.rlisp").map(|f| {
-        let mut parser = Parser::new(BufReader::new(f));
-        let parsed = parser.parse_all()
-            .unwrap_or_else(|err| {
-                let message = format!("ERROR: {}", err);
-                println!("{}", (message));
-                vec![]
-            });
-        for expr in &parsed {
-            let res = expr.eval(&mut env);
-            match res {
-                Ok(val) => match val {
-                    Value::List(ref l) if l.len() == 0 => continue,
-                    _ => println!("{}", val)
-                },
-                Err(why) => {
-                    let message = format!("ERROR: {}", why);
-                    println!("{}", color::err(message));
-                }
-            }
-        }
-    });
+    // Load library
+    let main = MAIN_FILE.to_string();
+    let args = &[Value::Str(main)];
 
-    run(&mut env);
+    functions::_include(env, args)?;
+
+    Ok(())
+}
+
+fn print_err<S: AsRef<str>>(msg: S) {
+    let err = format!("ERROR: {}", msg.as_ref());
+    println!("{}", color::err(err));
+}
+
+fn main() {
+    let mut env = Environment::new();
+
+    match init(&mut env) {
+        Ok(_) => repl::run(&mut env),
+        Err(why) => {
+            print_err(why);
+            print_err("Could not load standard library.");
+        }
+    }
 }

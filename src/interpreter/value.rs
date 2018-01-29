@@ -1,6 +1,5 @@
 use super::*;
 use interpreter::SExpr;
-use interpreter::*;
 use std::fmt;
 
 #[derive(Clone)]
@@ -132,7 +131,7 @@ impl fmt::Display for Value {
                 write!(f, "<procedure>")
             },
 
-            // { a: b, c: d, e: f }
+            // (make-{struct} {field1} ...)
             &Struct(ref name, ref values) => {
                 // Write opening bracket
                 write!(f, "(make-{}", name)?;
@@ -174,7 +173,7 @@ pub fn ok<T>(val: T) -> ::std::result::Result<Value, String>
     Ok(val.into())
 }
 
-pub fn err<T>(msg: T) -> ::std::result::Result<Value, String>
+pub fn err<T>(msg: T) -> Result<Value>
     where T: Into<String>
 {
     Err(msg.into())
@@ -188,7 +187,9 @@ impl PartialEq for Value {
             (&Num(a), &Num(b)) => a == b,
             (&Bool(a), &Bool(b)) => a == b,
             (&Str(ref a), &Str(ref b)) => a == b,
-            (&Symbol(ref a, av), &Symbol(ref b, bv)) => a == b && av == bv,
+            (&Symbol(ref a, a_vec), &Symbol(ref b, b_vec)) => {
+                a == b && a_vec == b_vec
+            },
             (&List(ref a), &List(ref b)) => {
                 if a.len() == b.len() {
                     for i in 0..a.len() {

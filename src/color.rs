@@ -22,11 +22,31 @@ pub fn err<S: Into<String>>(s: S) -> String {
 }
 
 #[cfg(target_os = "windows")]
-pub fn res<S: Into<String>>(s: S) -> String {
+pub fn number<S: Into<String>>(s: S) -> String {
     s.into()
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn res<S: Into<String>>(s: S) -> String {
+pub fn number<S: Into<String>>(s: S) -> String {
+    Yellow.paint(s.into()).to_string()
+}
+
+#[cfg(target_os = "windows")]
+pub fn string<S: Into<String>>(s: S) -> String {
+    s.into()
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn string<S: Into<String>>(s: S) -> String {
     Green.paint(s.into()).to_string()
+}
+
+#[cfg(target_os = "windows")]
+pub fn boolean<S: Into<String>>(s: S) -> String {
+    s.into()
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn boolean<S: Into<String>>(s: S) -> String {
+    Yellow.paint(s.into()).to_string()
 }

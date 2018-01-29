@@ -86,12 +86,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("fibonacci", functions::_fib_rust);
 
         // Type checking functions
-        self.define_intrinsic("num?", functions::_is_num);
-        self.define_intrinsic("bool?", functions::_is_bool);
-        self.define_intrinsic("str?", functions::_is_str);
-        self.define_intrinsic("cons?", functions::_is_cons);
-        self.define_intrinsic("lambda?", functions::_is_lambda);
-        self.define_intrinsic("symbol?", functions::_is_symbol);
+        functions::load_checks(self);
 
         // List functions
         // self.define_intrinsic("list", functions::_list);
@@ -126,5 +121,9 @@ impl Intrinsics for Environment {
         self.define_intrinsic("format", functions::_format);
         self.define_intrinsic("read-line", functions::_read_line);
         self.define_intrinsic("parse", functions::_parse);
+
+        self.define_intrinsic("include", functions::_include);
+
+        functions::load_trig_fns(self);
     }
 }
