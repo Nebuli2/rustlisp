@@ -123,6 +123,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("parse", functions::_parse);
 
         self.define_intrinsic("include", functions::_include);
+        self.define_intrinsic("read-file", functions::_read_file);
 
         functions::load_trig_fns(self);
     }

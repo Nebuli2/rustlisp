@@ -169,17 +169,23 @@
 (define (parse-eval str)
     (eval (parse str)))
 
-(define (run-repl) (begin
-    (printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.")
-    (repl)))
+(define (lisp-name)
+    env/lisp-name)
 
-(define (repl) (begin
+(define (lisp-version)
+    env/lisp-version)
+
+(define (run-repl)
+    (printf "Welcome to #{ (lisp-name) } v#{ (lisp-version) }.\n")
+    (repl))
+
+(define (repl)
     (print "> ")
     (let ([res (parse-eval (read-line))])
         (if (not (nil? res))
             (println res)
             empty))
-    (repl)))
+    (repl))
 
 (define (factorial n)
     (if (> n -1)
@@ -188,3 +194,7 @@
 
 (define (reload)
     (include "lib/main.rl"))
+
+(define (std/reload)
+    (println "Reloading stdlib...")
+    (include "lib/stdlib.rl"))

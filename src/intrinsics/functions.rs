@@ -893,3 +893,25 @@ pub fn _include(env: Env, args: Args) -> Output {
         Ok(nil())
     }
 }
+
+use std::io::prelude::*;
+
+pub fn _read_file(_: Env, args: Args) -> Output {
+    check_arity(1, args.len())?;
+
+    let arg = &args[0];
+    if let &Str(ref file_name) = arg {
+        // Open file
+        let mut file = File::open(file_name)
+            .map_err(|_| format!("Could not open file {}.", file_name))?;
+
+        // Read file to buffer
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .map_err(|_| format!("Could not read file {}.", file_name))?;
+
+        Ok(Str(contents))
+    } else {
+        Err(format!("{} is not a str.", arg))
+    }
+}

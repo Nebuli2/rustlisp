@@ -16,35 +16,51 @@ type Exprs<'a> = &'a [SExpr];
 /// `(define (func-name param1 ...) body)`
 pub fn _define(env: Env, exprs: Exprs) -> Output {
     let len = exprs.len();
-    if len == 3 {
+    if len > 2 {
         let (ident, val) = (&exprs[1], &exprs[2]);
-        match *ident {
+        match ident {
             // Define variable
-            Ident(ref s, _) => {
-                if RESERVED_WORDS.contains(&s.as_str()) {
-                    Err(reserved_word(s))
+            &Ident(ref s, _) => {
+                if len == 3 {
+                    if RESERVED_WORDS.contains(&s.as_str()) {
+                        Err(reserved_word(s))
+                    } else {
+                        let val = val.eval(env)?;
+                        env.define(s.clone(), val);
+                        ok(nil())
+                    }
                 } else {
-                    let val = val.eval(env)?;
-                    env.define(s.clone(), val);
-                    ok(nil())
+                    err(arity_exact(2, len - 1))
                 }
             },
 
             // Define function
             // Converts
-            //  (define (func-name param1 ...) body)
+            //  (define (func-name param1 ...) statements ...)
             // Into:
-            //  (define func-name (lambda (param1 ...) body))
-            List(ref vals) => {
-                let len = vals.len();
-                if len == 0 {
+            //  (define func-name (lambda (param1 ...) (begin statements ...)))
+            // If more than 3 args are passed in the original define, wrap last ones in a "begin".
+            &List(ref vals) => {
+                let vals_len = vals.len();
+                if vals_len == 0 {
                     Err(format!("Cannot redefine empty list."))
                 } else {
                     let ident = (&vals[0]).clone();
                     let params: Vec<_> = (&vals[1..]).iter()
                         .map(|expr| expr.clone())
                         .collect();
-                    let body = val.clone();
+
+                    let body = if len > 3 {
+                        let mut vec = Vec::<SExpr>::with_capacity(vals_len - 1);
+                        vec.push(Ident("begin".to_string(), false));
+
+                        let statements = (&exprs[2..]).iter()
+                            .map(|expr| expr.clone());
+                        vec.extend(statements);
+                        List(vec)
+                    } else {
+                        val.clone()
+                    };
 
                     let define = List(vec![
                         Ident("define".to_string(), false),
@@ -62,7 +78,7 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
             _ => Err(not_an_identifier(ident))
         }
     } else {
-        Err(arity_exact(2, len - 1))
+        Err(arity_at_least(2, len - 1))
     }
 }
 

@@ -1,8 +1,10 @@
-(println "Loading stdlib...")
-(include "lib/stdlib.rl")
+(define (run)
+    (println "Loading stdlib...")
+    (include "lib/stdlib.rl")
 
-(println "Loading point struct...")
-(include "lib/point.rl")
+    (println "Loading point struct...")
+    (include "lib/point.rl")
 
-;; Greeting
-(printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.\n")
+    (printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.\n"))
+
+(run)
