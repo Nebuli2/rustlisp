@@ -16,6 +16,8 @@ pub enum Value {
 }
 
 impl From<SExpr> for Value {
+
+    /// Converts the specified `SExpr` into a `Value`.
     fn from(expr: SExpr) -> Value {
         match expr {
             SExpr::Num(n) => Value::Num(n),
@@ -23,7 +25,9 @@ impl From<SExpr> for Value {
             SExpr::Str(s) => Value::Str(s),
             SExpr::Ident(s, v) => Value::Symbol(s, v),
             SExpr::List(vals) => Value::List(  
-                vals.into_iter().map(|expr| expr.into()).collect()
+                vals.into_iter()
+                    .map(|expr| Value::from(expr))
+                    .collect()
             ),
             SExpr::Nil => Value::List(vec![]),
             SExpr::Quote(expr) => (*expr).into()
@@ -32,6 +36,8 @@ impl From<SExpr> for Value {
 }
 
 impl Into<SExpr> for Value {
+
+    /// Converts the `Value` into an `SExpr`.
     fn into(self) -> SExpr {
         match self {
             Value::Num(n) => SExpr::Num(n),
@@ -55,6 +61,15 @@ impl Into<SExpr> for Value {
 }
 
 impl fmt::Display for Value {
+
+    /// Displays the `Value` in a human-readable format based on the type:
+    /// * *num:* Displays as is.
+    /// * *bool:* Displays as either `true` or `false`.
+    /// * *str:* Displays the string as is.
+    /// * *symbol:* Displays the symbol as is.
+    /// * *list:* Displays the list in the form: (a b c ...)
+    /// * *lambda:* Displays the lambda in the form: (lambda (params ...) body)
+    /// * *struct:* Displays the struct in the form: (make-{struct} fields ...)
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
         match self {
@@ -149,18 +164,24 @@ impl fmt::Display for Value {
 }
 
 impl Into<Value> for f64 {
+
+    /// Converts the specified `f64` into a num `Value`.
     fn into(self) -> Value {
         Value::Num(self)
     }
 }
 
 impl Into<Value> for bool {
+
+    /// Converts the specified `bool` into a bool `Value`.
     fn into(self) -> Value {
         Value::Bool(self)
     }
 }
 
 impl Into<Value> for String {
+
+    /// Converts the specified `String` into a str `Value`.
     fn into(self) -> Value {
         Value::Str(self)
     }
@@ -180,6 +201,7 @@ pub fn err<T>(msg: T) -> Result<Value>
 }
 
 impl PartialEq for Value {
+
     /// Compare the two values to one another for equality.
     fn eq(&self, other: &Value) -> bool {
         use self::Value::*;
@@ -203,11 +225,14 @@ impl PartialEq for Value {
                     false
                 }
             },
+
             (&Struct(ref a_ident, ref a_fields), &Struct(ref b_ident, ref b_fields)) => {
-                if a_ident == b_ident {
-                    for (i, a_value) in a_fields.iter().enumerate() {
-                        let b_value = &b_fields[i];
-                        if a_value != b_value {
+                let a_len = a_fields.len();
+                let b_len = b_fields.len();
+                if a_ident == b_ident && a_len == b_len {
+                    for i in 0..a_len {
+                        let (a, b) = (&a_fields[i], &b_fields[i]);
+                        if a != b {
                             return false;
                         }
                     }

@@ -10,7 +10,7 @@ use std::io::{
 use std::process::exit;
 
 /// Represents the output of a function.
-type Output = Result<Value>;
+type EvalResult = Result<Value>;
 
 /// Represents a mutable reference to an environment.
 type Env<'a> = &'a mut Environment;
@@ -21,7 +21,7 @@ type Args<'a> = &'a [Value];
 /// `exit : num -> nil`
 /// 
 /// Exits the process with the specified exit code.
-pub fn _exit(_: Env, args: Args) -> Output {
+pub fn _exit(_: Env, args: Args) -> EvalResult {
     let len = args.len();
     let ecode = match len {
         0 => 0,
@@ -40,24 +40,29 @@ pub fn _exit(_: Env, args: Args) -> Output {
 /// `print : A... -> nil`
 /// 
 /// Prints the specified values to the standard output.
-pub fn _print(env: Env, args: Args) -> Output {
+pub fn _print(env: Env, args: Args) -> EvalResult {
     let out = _concat(env, args)?;
-    if let Str(ref s) = out {
-        print!("{}", s);
-        stdout().flush().expect("Failed to flush stdin.");
-        ok(nil())
-    } else {
-        err("Unknown failure.")
+    match out {
+        Str(ref s) => {
+            print!("{}", s);
+            stdout().flush().expect("Failed to flush stdout.");
+            ok(nil())
+        },
+        _ => err("Concat failed to produce a string.")
     }
 }
 
-pub fn _println(env: Env, args: Args) -> Output {
+/// `println : A... -> nil`
+/// 
+/// Prints the specified values, followed by a newline to the standard output.
+pub fn _println(env: Env, args: Args) -> EvalResult {
     let out = _concat(env, args)?;
-    if let Str(ref s) = out {
-        println!("{}", s);
-        ok(nil())
-    } else {
-        err("Unknown failure.")
+    match out {
+        Str(ref s) => {
+            println!("{}", s);
+            ok(nil())
+        },
+        _ => err("Concat failed to produce a string.")
     }
 }
 
@@ -66,7 +71,7 @@ pub fn _println(env: Env, args: Args) -> Output {
 /// Produces the final values of the specified values. In practice, this
 /// function evaluates all statements provided and produces the final
 /// value.
-pub fn _begin(_: Env, args: Args) -> Output {
+pub fn _begin(_: Env, args: Args) -> EvalResult {
     if args.is_empty() {
         Ok(nil())
     } else {
@@ -77,7 +82,7 @@ pub fn _begin(_: Env, args: Args) -> Output {
 /// `+ : num... -> num`
 /// 
 /// Produces the sum of 0 and the specified nums.
-pub fn _add(_: Env, args: Args) -> Output {
+pub fn _add(_: Env, args: Args) -> EvalResult {
     let mut sum = 0.0;
     for arg in args.iter() {
         match arg {
@@ -92,7 +97,7 @@ pub fn _add(_: Env, args: Args) -> Output {
 /// 
 /// Produces the difference between the first num and the sum of the
 /// subsequent nums. If only one num is provided, the num is negated.
-pub fn _sub(_: Env, args: Args) -> Output {
+pub fn _sub(_: Env, args: Args) -> EvalResult {
     let len = args.len();
     if len > 0 {
         let first = &args[0];
@@ -121,7 +126,7 @@ pub fn _sub(_: Env, args: Args) -> Output {
 /// `* : num... num`
 /// 
 /// Produces the product of 1 and the specified values.
-pub fn _mul(_: Env, args: Args) -> Output {
+pub fn _mul(_: Env, args: Args) -> EvalResult {
     let mut prod = 1.0;
     for arg in args.iter() {
         match arg {
@@ -136,7 +141,7 @@ pub fn _mul(_: Env, args: Args) -> Output {
 /// 
 /// Produces the quotient between the first num and the product of the
 /// subsequent nums. If only one num is provided, the num is inverted.
-pub fn _div(_: Env, args: Args) -> Output {
+pub fn _div(_: Env, args: Args) -> EvalResult {
     let len = args.len();
     if len > 0 {
         let first = &args[0];
@@ -170,14 +175,14 @@ fn modulo(x: f64, y: f64) -> f64 {
 /// `modulo : num num -> num`
 /// 
 /// Produces the modulo of the two specified nums.
-pub fn _modulo(_: Env, args: Args) -> Output {
+pub fn _modulo(_: Env, args: Args) -> EvalResult {
     binary_fn(args, modulo)
 }
 
 /// `sqrt : num -> num`
 /// 
 /// Produces the square root of the specified num.
-pub fn _sqrt(_: Env, args: Args) -> Output {
+pub fn _sqrt(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::sqrt)
 }
 
@@ -185,14 +190,14 @@ pub fn _sqrt(_: Env, args: Args) -> Output {
 ///   
 /// Produces the logarithm of the first specified num, using the second
 /// specified num as the base.
-pub fn _log(_: Env, args: Args) -> Output {
+pub fn _log(_: Env, args: Args) -> EvalResult {
     binary_fn(args, f64::log)
 }
 
 /// `ln : num -> num`
 /// 
 /// Produces the natural logarithm of the specified num.
-pub fn _ln(_: Env, args: Args) -> Output {
+pub fn _ln(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::ln)
 }
 
@@ -200,14 +205,14 @@ pub fn _ln(_: Env, args: Args) -> Output {
 /// 
 /// Produces the num equal to the first num raised to the power of the
 /// second num.
-pub fn _pow(_: Env, args: Args) -> Output {
+pub fn _pow(_: Env, args: Args) -> EvalResult {
     binary_fn(args, f64::powf)
 }
 
 /// Converts a slice of values and a function taking one `f64` into a 
 /// `Result<Value, String`. It checks that the number of arguments is equal to
 /// one.
-fn unary_fn<F>(args: Args, f: F) -> Output 
+fn unary_fn<F>(args: Args, f: F) -> EvalResult 
     where F: Fn(f64) -> f64
 {
     check_arity(1, args.len())?;
@@ -222,84 +227,84 @@ fn unary_fn<F>(args: Args, f: F) -> Output
 /// Converts a slice of values and a function taking two `f64`s into a 
 /// `Result<Value, String`. It checks that the number of arguments is equal to
 /// two.
-fn binary_fn<F>(args: Args, f: F) -> Output 
+fn binary_fn<F>(args: Args, f: F) -> EvalResult 
     where F: Fn(f64, f64) -> f64
 {
     check_arity(2, args.len())?;
 
-    let (x, y) = (&args[0], &args[1]);
-    match (x, y) {
-        (&Num(x), &Num(y)) => ok(f(x, y)),
-        _ => err(format!("Expected (num num), found ({} {}).", x, y))
+    let (u, v) = (&args[0], &args[1]);
+    match (u, v) {
+        (&Num(u), &Num(v)) => ok(f(u, v)),
+        _ => err(format!("Expected (num num), found ({} {}).", u, v))
     }
 }
 
 /// `sin : num -> num`
 /// 
 /// Produces the sine of the specified num.
-pub fn _sin(_: Env, args: Args) -> Output {
+pub fn _sin(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::sin)
 }
 
 /// `cos : num -> num`
 /// 
 /// Produces the cosine of the specified num.
-pub fn _cos(_: Env, args: Args) -> Output {
+pub fn _cos(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::cos)
 }
 
 /// `tan : num -> num`
 /// 
 /// Produces the tangent of the specified num.
-pub fn _tan(_: Env, args: Args) -> Output {
+pub fn _tan(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::tan)
 }
 
 /// `csc : num -> num`
 /// 
 /// Produces the cosecant of the specified num.
-pub fn _csc(_: Env, args: Args) -> Output {
+pub fn _csc(_: Env, args: Args) -> EvalResult {
     unary_fn(args, |x| 1.0 / f64::cos(x))
 }
 
 /// `sec : num -> num`
 /// 
 /// Produces the secant of the specified num.
-pub fn _sec(_: Env, args: Args) -> Output {
+pub fn _sec(_: Env, args: Args) -> EvalResult {
     unary_fn(args, |x| 1.0 / f64::cos(x))
 }
 
 /// `cot : num -> num`
 /// 
 /// Produces the cotangent of the specified num.
-pub fn _cot(_: Env, args: Args) -> Output {
+pub fn _cot(_: Env, args: Args) -> EvalResult {
     unary_fn(args, |x| 1.0 / f64::tan(x))
 }
 
 /// `asin : num -> num`
 /// 
 /// Produces the inverse sine of the specified num.
-pub fn _asin(_: Env, args: Args) -> Output {
+pub fn _asin(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::asin)
 }
 
 /// `acos : num -> num`
 /// 
 /// Produces the inverse cosine of the specified num.
-pub fn _acos(_: Env, args: Args) -> Output {
+pub fn _acos(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::acos)
 }
 
 /// `atan : num -> num`
 /// 
 /// Produces the inverse tangent of the specified num.
-pub fn _atan(_: Env, args: Args) -> Output {
+pub fn _atan(_: Env, args: Args) -> EvalResult {
     unary_fn(args, f64::atan)
 }
 
 /// `atan2 : num num -> num`
 /// 
-pub fn _atan2(_: Env, args: Args) -> Output {
+pub fn _atan2(_: Env, args: Args) -> EvalResult {
     binary_fn(args, f64::atan2)
 }
 
@@ -321,7 +326,7 @@ pub fn load_trig_fns(env: Env) {
 /// `num? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a num.
-pub fn _is_num(_: Env, args: Args) -> Output {
+pub fn _is_num(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -334,7 +339,7 @@ pub fn _is_num(_: Env, args: Args) -> Output {
 /// `bool? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a bool.
-pub fn _is_bool(_: Env, args: Args) -> Output {
+pub fn _is_bool(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -347,7 +352,7 @@ pub fn _is_bool(_: Env, args: Args) -> Output {
 /// `str? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a str.
-pub fn _is_str(_: Env, args: Args) -> Output {
+pub fn _is_str(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -360,7 +365,7 @@ pub fn _is_str(_: Env, args: Args) -> Output {
 /// `symbol? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a symbol.
-pub fn _is_symbol(_: Env, args: Args) -> Output {
+pub fn _is_symbol(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -373,7 +378,7 @@ pub fn _is_symbol(_: Env, args: Args) -> Output {
 /// `cons? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a list.
-pub fn _is_cons(_: Env, args: Args) -> Output {
+pub fn _is_cons(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -386,7 +391,7 @@ pub fn _is_cons(_: Env, args: Args) -> Output {
 /// `lambda? : A -> bool`
 /// 
 /// Determines whether or not the specified value is a function.
-pub fn _is_lambda(_: Env, args: Args) -> Output {
+pub fn _is_lambda(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -409,7 +414,7 @@ pub fn load_checks(env: Env) {
 /// `list : A... -> [A]`
 /// 
 /// Wraps all specified values in a list.
-pub fn _list(_: Env, args: Args) -> Output {
+pub fn _list(_: Env, args: Args) -> EvalResult {
     Ok(List(Vec::from(args)))
 }
 
@@ -417,7 +422,7 @@ pub fn _list(_: Env, args: Args) -> Output {
 /// 
 /// Produces a list equal to the specified list prepended by the specified
 /// value.
-pub fn _cons(_: Env, args: Args) -> Output {
+pub fn _cons(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (car, cdr) = (&args[0], &args[1]);
@@ -440,7 +445,7 @@ pub fn _cons(_: Env, args: Args) -> Output {
 /// `car : [A] -> A`
 /// 
 /// Produces the first element of the specified list.
-pub fn _car(_: Env, args: Args) -> Output {
+pub fn _car(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let list = &args[0];
@@ -460,7 +465,7 @@ pub fn _car(_: Env, args: Args) -> Output {
 /// `cdr : [A] -> A`
 /// 
 /// Produces the rest of the specified list after the first element.
-pub fn _cdr(_: Env, args: Args) -> Output {
+pub fn _cdr(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let list = &args[0];
@@ -486,7 +491,7 @@ pub fn _cdr(_: Env, args: Args) -> Output {
 /// `len : [A] -> num`
 /// 
 /// Determines the length of the specified list.
-pub fn _len(_: Env, args: Args) -> Output {
+pub fn _len(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let list = &args[0];
@@ -499,7 +504,7 @@ pub fn _len(_: Env, args: Args) -> Output {
 /// `nth : [A] num -> A`
 /// 
 /// Produces the nth value of the specified list.
-pub fn _nth(_: Env, args: Args) -> Output {
+pub fn _nth(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (list, index) = (&args[0], &args[1]);
@@ -522,7 +527,7 @@ pub fn _nth(_: Env, args: Args) -> Output {
 }
 
 /// `append : [A]... -> [A]`
-pub fn _append(_: Env, args: Args) -> Output {
+pub fn _append(_: Env, args: Args) -> EvalResult {
     let mut buf = Vec::<Value>::new();
 
     for arg in args.iter() {
@@ -552,7 +557,7 @@ pub fn _append(_: Env, args: Args) -> Output {
 /// 
 /// Determines whether or not the first argument is less than the second
 /// argument.
-pub fn _is_l(_: Env, args: Args) -> Output {
+pub fn _is_l(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (a, b) = (&args[0], &args[1]);
@@ -567,7 +572,7 @@ pub fn _is_l(_: Env, args: Args) -> Output {
 /// 
 /// Determines whether or not the first argument is less than or equal to
 /// the second argument.
-pub fn _is_le(_: Env, args: Args) -> Output {
+pub fn _is_le(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (a, b) = (&args[0], &args[1]);
@@ -582,7 +587,7 @@ pub fn _is_le(_: Env, args: Args) -> Output {
 /// 
 /// Determines whether or not the first argument is greater than the second
 /// argument.
-pub fn _is_g(_: Env, args: Args) -> Output {
+pub fn _is_g(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (a, b) = (&args[0], &args[1]);
@@ -597,7 +602,7 @@ pub fn _is_g(_: Env, args: Args) -> Output {
 /// 
 /// Determines whether or not the first argument is greater than or equal
 /// to the second argument.
-pub fn _is_ge(_: Env, args: Args) -> Output {
+pub fn _is_ge(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (a, b) = (&args[0], &args[1]);
@@ -612,7 +617,7 @@ pub fn _is_ge(_: Env, args: Args) -> Output {
 /// 
 /// Determines whether or not the two specified values are equal to one
 /// another.
-pub fn _is_eq(_: Env, args: Args) -> Output {
+pub fn _is_eq(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?; 
 
     let (a, b) = (&args[0], &args[1]);
@@ -622,7 +627,7 @@ pub fn _is_eq(_: Env, args: Args) -> Output {
 /// `or : bool... -> bool`
 /// 
 /// Produces the logical `or` of all the specified boolean values.
-pub fn _or(_: Env, args: Args) -> Output {
+pub fn _or(_: Env, args: Args) -> EvalResult {
     for arg in args {
         match arg {
             &Bool(b) => if b {
@@ -638,7 +643,7 @@ pub fn _or(_: Env, args: Args) -> Output {
 /// `and : bool... -> bool`
 /// 
 /// Produces the logical `and` of all the specified boolean values.
-pub fn _and(_: Env, args: Args) -> Output {
+pub fn _and(_: Env, args: Args) -> EvalResult {
     for arg in args {
         match arg {
             &Bool(b) => if !b {
@@ -655,7 +660,7 @@ pub fn _and(_: Env, args: Args) -> Output {
 /// 
 /// Expands the specified list of values into a variadic input for the
 /// specified function, producing that function's output.
-pub fn _apply(env: Env, args: Args) -> Output {
+pub fn _apply(env: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
     let (func, args) = (&args[0], &args[1]);
@@ -669,7 +674,7 @@ pub fn _apply(env: Env, args: Args) -> Output {
 /// `not : bool -> bool`
 /// 
 /// Inverts the specified boolean value.
-pub fn _not(_: Env, args: Args) -> Output {
+pub fn _not(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -681,7 +686,7 @@ pub fn _not(_: Env, args: Args) -> Output {
 
 /// `A... -> str`
 /// Produces a string containing all arguments concatenated together.
-pub fn _concat(_: Env, args: Args) -> Output {
+pub fn _concat(_: Env, args: Args) -> EvalResult {
     let mut buf = String::new();
 
     for arg in args.iter() {
@@ -692,7 +697,7 @@ pub fn _concat(_: Env, args: Args) -> Output {
     ok(buf)
 }
 
-pub fn _eval(env: Env, args: Args) -> Output {
+pub fn _eval(env: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = (&args[0]).clone();
@@ -762,7 +767,7 @@ fn split_str(s: &str) -> Result<Vec<StrSection>> {
     }
 }
 
-fn format_str(env: Env, sections: &[StrSection]) -> Output {
+fn format_str(env: Env, sections: &[StrSection]) -> EvalResult {
     use self::StrSection::*;
 
     let mut buf = String::new();
@@ -788,7 +793,7 @@ fn format_str(env: Env, sections: &[StrSection]) -> Output {
     ok(buf)
 }
 
-pub fn _format(env: Env, args: Args) -> Output {
+pub fn _format(env: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let format = &args[0];
@@ -803,7 +808,7 @@ pub fn _format(env: Env, args: Args) -> Output {
     }
 }
 
-pub fn _read_line(_: Env, args: Args) -> Output {
+pub fn _read_line(_: Env, args: Args) -> EvalResult {
     check_arity(0, args.len())?;
 
     let mut buf = String::new();
@@ -814,7 +819,7 @@ pub fn _read_line(_: Env, args: Args) -> Output {
     ok(buf)
 }
 
-pub fn _parse(env: Env, args: Args) -> Output {
+pub fn _parse(env: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let input = &args[0];
@@ -841,7 +846,7 @@ fn fib(n: u64) -> u64 {
     }
 }
 
-pub fn _fib_rust(_: Env, args: Args) -> Output {
+pub fn _fib_rust(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let n = &args[0];
@@ -860,25 +865,21 @@ use std::fs::File;
 
 /// `run-file : str... -> A`
 /// Opens and runs the specified file.
-pub fn _include(env: Env, args: Args) -> Output {
+pub fn _include(env: Env, args: Args) -> EvalResult {
     let mut vals = Vec::<Value>::new();
+
     for arg in args {
         if let &Str(ref file_name) = arg {
             if let Ok(file) = File::open(file_name) {
                 let reader = BufReader::new(file);
                 let mut parser = Parser::new(reader);
-                match parser.parse_all() {
-                    Ok(ref exprs) => {
-                        for expr in exprs {
-                            match expr.eval(env) {
-                                Ok(val) => vals.push(val),
-                                Err(why) => return Err(why)
-                            }
-                        }
-                    },
-                    Err(why) => return Err(why)
-                }
+                let exprs = parser.parse_all()?;
 
+                let mut list = vec![SExpr::Ident("begin".to_string(), false)];
+                list.extend(exprs);
+                let expr = SExpr::List(list);
+                let res = expr.eval(env)?;
+                vals.push(res);
             } else {
                 return err(format!("Could not open file {}.", file_name));
             }
@@ -887,16 +888,12 @@ pub fn _include(env: Env, args: Args) -> Output {
         }
     }
 
-    if let Some(last) = vals.last() {
-        Ok(last.clone())
-    } else {
-        Ok(nil())
-    }
+    Ok(nil())
 }
 
 use std::io::prelude::*;
 
-pub fn _read_file(_: Env, args: Args) -> Output {
+pub fn _read_file(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
     let arg = &args[0];
@@ -906,9 +903,10 @@ pub fn _read_file(_: Env, args: Args) -> Output {
             .map_err(|_| format!("Could not open file {}.", file_name))?;
 
         // Read file to buffer
-        let mut contents = String::new();
+        let mut contents = String::from("(begin ");
         file.read_to_string(&mut contents)
             .map_err(|_| format!("Could not read file {}.", file_name))?;
+        contents.push(')');
 
         Ok(Str(contents))
     } else {

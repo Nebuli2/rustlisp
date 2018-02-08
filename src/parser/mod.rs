@@ -4,6 +4,8 @@ use std::io::{
     BufReader, 
     Read
 };
+
+// Export SExpr.
 pub use sexpr::*;
 
 pub struct Parser<R: Read> {
@@ -11,7 +13,7 @@ pub struct Parser<R: Read> {
     reader: BufReader<R>
 }
 
-type Parse = Result<SExpr, String>;
+type ParseResult = Result<SExpr, String>;
 
 impl<R: Read> Parser<R> {
 
@@ -21,11 +23,6 @@ impl<R: Read> Parser<R> {
             reader
         }
     }
-
-    // pub fn parse_from_str(&mut self, s: &str) -> Parse {
-    //     let mut buf = BufReader::new(s.as_bytes());
-    //     self.parse(&mut buf)
-    // }
 
     pub fn parse_all(&mut self) -> Result<Vec<SExpr>, String> {
         let mut results: Vec<SExpr> = vec![];
@@ -59,10 +56,10 @@ impl<R: Read> Parser<R> {
 
     /// Produces the next expression from the reader, or an error if one is not
     /// found.
-    pub fn parse(&mut self) -> Parse {
+    pub fn parse(&mut self) -> ParseResult {
         loop {
             match self.next_char() {
-                Some(c) if c.is_whitespace() => continue,
+                Some(c) if c.is_whitespace() => (),
                 Some(c) => match c {
                     ';' => {
                         self.skip_to_linebreak();
@@ -86,6 +83,9 @@ impl<R: Read> Parser<R> {
         }
     }
 
+    /// Attempts to read the next atom in the `Parser`'s reader into an 
+    /// `Option<String>`. An atom is defined as being any expression other than
+    /// a list.
     fn read_atom(&mut self) -> Option<String> {
         let mut buf = String::new();
 
@@ -103,14 +103,12 @@ impl<R: Read> Parser<R> {
             }
         }
 
-        if buf.is_empty() {
-            None
-        } else {
-            Some(buf)
-        }
+        if buf.is_empty() { None } else { Some(buf) }
     }
 
-    fn parse_atom(&mut self) -> Parse {
+    /// Attempts to parse the next atom in the `Parser`'s reader. An atom is 
+    /// defined as any expression that is not a list.
+    fn parse_atom(&mut self) -> ParseResult {
         let atom = self.read_atom();
         if let Some(s) = atom {
             // Check true
@@ -150,7 +148,8 @@ impl<R: Read> Parser<R> {
         }
     }
 
-    fn parse_str(&mut self) -> Parse {
+    /// Attempts to parse the next string from the `Parser`'s reader.
+    fn parse_str(&mut self) -> ParseResult {
         let mut buf = String::new();
 
         // Read chars until closing quotes. If the end of the buffer is reached
@@ -187,12 +186,13 @@ impl<R: Read> Parser<R> {
         Ok(SExpr::Str(buf))
     }
 
-    fn parse_list(&mut self, close: char) -> Parse {
+    /// Attempts to parse the next list from the `Parser`'s reader.
+    fn parse_list(&mut self, close: char) -> ParseResult {
         let mut buf: Vec<SExpr> = vec![];
 
         loop {
             match self.next_char() {
-                Some(c) if c.is_whitespace() => continue,
+                Some(c) if c.is_whitespace() => (),
                 Some(c) if c == close => {
                     break;
                 },
@@ -208,6 +208,8 @@ impl<R: Read> Parser<R> {
         Ok(SExpr::List(buf))
     }
 
+    /// Attempts to produce the next `char` in the `Parser`'s reader. If the
+    /// reader does not contains another `char`, `None` is returned instead.
     fn next_char(&mut self) -> Option<char> {
         if self.stack.is_empty() {
             let mut buf: [u8; 1] = [0];
@@ -225,10 +227,13 @@ impl<R: Read> Parser<R> {
         }
     }
 
+    /// Undoes the last read `char`.
     fn undo_char(&mut self, c: char) {
         self.stack.push(c);
     }
 }
+
+// val 
 
 trait ValidParse {
     fn is_valid_atom(&self) -> bool;
@@ -236,6 +241,8 @@ trait ValidParse {
 }
 
 impl ValidParse for char {
+
+    // Determines whether or not the item is a valid beginning to an atom.
     fn is_valid_atom(&self) -> bool {
         match *self {
             '(' | '[' | ')' | ']' => false,
@@ -243,6 +250,7 @@ impl ValidParse for char {
         }
     }
 
+    /// Determines whether or not the item is valid for use in an identifier.
     fn is_valid_ident(&self) -> bool {
         match *self {
             '-' | '_' | '+' | '/' | '*' |

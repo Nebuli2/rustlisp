@@ -14,7 +14,7 @@ use interpreter::*;
 use intrinsics::{ Intrinsics, functions };
 use environment::Environment;
 
-const MAIN_FILE: &'static str = "lib/main.rl";
+const MAIN_FILE: &'static str = "lib/stdlib.rl";
 
 fn init(env: &mut Environment) -> Result<(), String> {
     // Create context
@@ -29,7 +29,7 @@ fn init(env: &mut Environment) -> Result<(), String> {
     Ok(())
 }
 
-fn print_err<S: AsRef<str>>(msg: S) {
+fn print_err<S>(msg: S) where S: AsRef<str> {
     let err = format!("ERROR: {}", msg.as_ref());
     println!("{}", color::err(err));
 }

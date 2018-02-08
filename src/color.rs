@@ -8,7 +8,7 @@ pub fn prompt<S: Into<String>>(s: S) -> String {
 
 #[cfg(not(target_os = "windows"))]
 pub fn prompt<S: Into<String>>(s: S) -> String {
-    Blue.bold().paint(s.into()).to_string()
+    Blue.paint(s.into()).to_string()
 }
 
 #[cfg(target_os = "windows")]
@@ -27,26 +27,31 @@ pub fn number<S: Into<String>>(s: S) -> String {
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 pub fn number<S: Into<String>>(s: S) -> String {
     Yellow.paint(s.into()).to_string()
 }
 
 #[cfg(target_os = "windows")]
+#[allow(dead_code)]
 pub fn string<S: Into<String>>(s: S) -> String {
     s.into()
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 pub fn string<S: Into<String>>(s: S) -> String {
     Green.paint(s.into()).to_string()
 }
 
 #[cfg(target_os = "windows")]
+#[allow(dead_code)]
 pub fn boolean<S: Into<String>>(s: S) -> String {
     s.into()
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 pub fn boolean<S: Into<String>>(s: S) -> String {
     Yellow.paint(s.into()).to_string()
 }
