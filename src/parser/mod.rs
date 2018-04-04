@@ -54,8 +54,10 @@ impl<R: Read> Parser<R> {
     /// found.
     pub fn parse(&mut self) -> ParseResult {
         self.skip_whitespace();
-        match self.next_char() {
-            Some(c) => match c {
+
+        self.next_char()
+            .ok_or("EOF".to_string())
+            .and_then(|c| match c {
                 // Comment
                 ';' => {
                     self.skip_to_linebreak();
@@ -83,9 +85,7 @@ impl<R: Read> Parser<R> {
                     self.undo_char(c);
                     self.parse_atom()
                 }
-            },
-            None => Err("EOF".to_string()),
-        }
+            })
     }
 
     /// Attempts to read the next atom in the `Parser`'s reader into an
