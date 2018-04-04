@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use interpreter::Value;
+use super::Value;
 
 type Scope = HashMap<String, Value>;
 type StructFields = Vec<String>;
@@ -23,20 +23,22 @@ impl FieldIndex for StructFields {
 pub struct Environment {
     base: Scope,
     stack: Vec<Scope>,
-    structs: HashMap<String, StructFields>
+    structs: HashMap<String, StructFields>,
 }
 
-impl Environment {
-    pub fn new() -> Environment {
+impl Default for Environment {
+    fn default() -> Self {
         let mut env = Environment {
             base: HashMap::new(),
             stack: vec![],
-            structs: HashMap::new()
+            structs: HashMap::new(),
         };
         env.enter_scope();
         env
     }
+}
 
+impl Environment {
     pub fn structs(&self) -> &HashMap<String, StructFields> {
         &self.structs
     }
@@ -53,15 +55,15 @@ impl Environment {
         let name = name.into();
         let fields = self.structs().get(&name);
         match fields {
-            Some(ref fields) => Some(fields),
-            _ => None
+            Some(fields) => Some(fields),
+            _ => None,
         }
     }
 
     pub fn prev_scope(&self) -> &Scope {
         let len = self.stack.len();
-        if len > 1 { 
-            &self.stack[len - 1] 
+        if len > 1 {
+            &self.stack[len - 1]
         } else {
             &self.base
         }
@@ -82,29 +84,34 @@ impl Environment {
     }
 
     pub fn exit_scope(&mut self) {
-        self.stack.pop().expect("Attempted to exit nonexistent scope.");
+        self.stack
+            .pop()
+            .expect("Attempted to exit nonexistent scope.");
     }
 
-    pub fn define<K>(&mut self, key: K, value: Value) 
-        where K: Into<String>
+    pub fn define<K>(&mut self, key: K, value: Value)
+    where
+        K: Into<String>,
     {
         let scope = self.cur_scope_mut();
         scope.insert(key.into(), value);
     }
 
-    pub fn get<K>(&self, key: K) -> Option<&Value> 
-        where K: AsRef<str>
+    pub fn get<K>(&self, key: K) -> Option<&Value>
+    where
+        K: AsRef<str>,
     {
         for scope in self.stack.iter().rev() {
             if let Some(value) = scope.get(key.as_ref()) {
-                return Some(value)
+                return Some(value);
             }
         }
         None
     }
 
     pub fn get_super<K>(&self, key: K) -> Option<&Value>
-        where K: AsRef<str>
+    where
+        K: AsRef<str>,
     {
         let key = key.as_ref();
         let len = self.stack.len();

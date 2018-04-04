@@ -1,26 +1,22 @@
 pub mod sexpr;
 
-use std::io::{
-    BufReader, 
-    Read
-};
+use std::io::{BufReader, Read};
 
 // Export SExpr.
 pub use sexpr::*;
 
 pub struct Parser<R: Read> {
     stack: Vec<char>,
-    reader: BufReader<R>
+    reader: BufReader<R>,
 }
 
 type ParseResult = Result<SExpr, String>;
 
 impl<R: Read> Parser<R> {
-
     pub fn new(reader: BufReader<R>) -> Self {
         Parser {
             stack: vec![],
-            reader
+            reader,
         }
     }
 
@@ -34,7 +30,7 @@ impl<R: Read> Parser<R> {
                     if why == "EOF" {
                         break;
                     } else {
-                        return Err(why)
+                        return Err(why);
                     }
                 }
             }
@@ -49,7 +45,7 @@ impl<R: Read> Parser<R> {
             match self.next_char() {
                 Some(c) if c == '\n' => break,
                 Some(_) => continue,
-                None => break
+                None => break,
             }
         }
     }
@@ -57,33 +53,42 @@ impl<R: Read> Parser<R> {
     /// Produces the next expression from the reader, or an error if one is not
     /// found.
     pub fn parse(&mut self) -> ParseResult {
-        loop {
-            match self.next_char() {
-                Some(c) if c.is_whitespace() => (),
-                Some(c) => match c {
-                    ';' => {
-                        self.skip_to_linebreak();
-                        return self.parse()
-                    }
-                    '\'' => {
-                        let quoted = self.parse()?;
-                        let quoted = SExpr::Quote(Box::new(quoted));
-                        return Ok(quoted)
-                    },
-                    '(' => return self.parse_list(')'),
-                    '[' => return self.parse_list(']'),
-                    '"' => return self.parse_str(),
-                    c => {
-                        self.undo_char(c);
-                        return self.parse_atom();
-                    }
-                },
-                None => return Err("EOF".to_string())
-            }
+        self.skip_whitespace();
+        match self.next_char() {
+            Some(c) => match c {
+                // Comment
+                ';' => {
+                    self.skip_to_linebreak();
+                    self.parse()
+                }
+
+                // Quote
+                '\'' => {
+                    let quoted = self.parse()?;
+                    let quoted = SExpr::Quote(Box::new(quoted));
+                    Ok(quoted)
+                }
+
+                // List (parentheses)
+                '(' => self.parse_list(')'),
+
+                // List (brackets)
+                '[' => self.parse_list(']'),
+
+                // String
+                '"' => self.parse_str(),
+
+                // Atom
+                _ => {
+                    self.undo_char(c);
+                    self.parse_atom()
+                }
+            },
+            None => Err("EOF".to_string()),
         }
     }
 
-    /// Attempts to read the next atom in the `Parser`'s reader into an 
+    /// Attempts to read the next atom in the `Parser`'s reader into an
     /// `Option<String>`. An atom is defined as being any expression other than
     /// a list.
     fn read_atom(&mut self) -> Option<String> {
@@ -103,10 +108,14 @@ impl<R: Read> Parser<R> {
             }
         }
 
-        if buf.is_empty() { None } else { Some(buf) }
+        if buf.is_empty() {
+            None
+        } else {
+            Some(buf)
+        }
     }
 
-    /// Attempts to parse the next atom in the `Parser`'s reader. An atom is 
+    /// Attempts to parse the next atom in the `Parser`'s reader. An atom is
     /// defined as any expression that is not a list.
     fn parse_atom(&mut self) -> ParseResult {
         let atom = self.read_atom();
@@ -169,17 +178,17 @@ impl<R: Read> Parser<R> {
                             '\"' => '\"',
                             '0' => '\0',
                             '\\' => '\\',
-                            c => return Err(format!("Unknown escape character '\\{}'.", c))
+                            c => return Err(format!("Unknown escape character '\\{}'.", c)),
                         };
                         buf.push(escape);
                     }
-                },
+                }
 
                 // Otherwise push the character
                 Some(c) => buf.push(c),
 
                 // Throw an error if the string is unclosed
-                None => return Err("Unexpected EOF before end of string.".to_string())
+                None => return Err("Unexpected EOF before end of string.".to_string()),
             }
         }
 
@@ -195,13 +204,13 @@ impl<R: Read> Parser<R> {
                 Some(c) if c.is_whitespace() => (),
                 Some(c) if c == close => {
                     break;
-                },
+                }
                 Some(c) => {
                     self.undo_char(c);
                     let exp = self.parse()?;
                     buf.push(exp);
-                },
-                None => return Err("Unexpected EOF before end of list.".to_string())
+                }
+                None => return Err("Unexpected EOF before end of list.".to_string()),
             }
         }
 
@@ -216,14 +225,27 @@ impl<R: Read> Parser<R> {
             match self.reader.read(&mut buf) {
                 Ok(n) => match n {
                     1 => (), // Read one char as expected
-                    _ => return None
+                    _ => return None,
                 },
-                Err(_) => return None
+                Err(_) => return None,
             }
             let ch = buf[0] as char;
             Some(ch)
         } else {
             self.stack.pop()
+        }
+    }
+
+    fn skip_whitespace(&mut self) {
+        loop {
+            match self.next_char() {
+                Some(c) if c.is_whitespace() => (),
+                Some(c) => {
+                    self.undo_char(c);
+                    break;
+                }
+                None => break,
+            }
         }
     }
 
@@ -233,7 +255,7 @@ impl<R: Read> Parser<R> {
     }
 }
 
-// val 
+// val
 
 trait ValidParse {
     fn is_valid_atom(&self) -> bool;
@@ -241,24 +263,47 @@ trait ValidParse {
 }
 
 impl ValidParse for char {
-
     // Determines whether or not the item is a valid beginning to an atom.
     fn is_valid_atom(&self) -> bool {
         match *self {
             '(' | '[' | ')' | ']' => false,
-            _ => true
+            _ => true,
         }
     }
 
     /// Determines whether or not the item is valid for use in an identifier.
     fn is_valid_ident(&self) -> bool {
         match *self {
-            '-' | '_' | '+' | '/' | '*' |
-            '%' | '>' | '<' | '=' | '?' |
-            '!' | '&' | '$' | '.' | '#' |
-            ':' | 'λ' |
-            'a' ... 'z' | 'A' ... 'Z' | '0' ... '9' => true,
-            _ => false
+            '-'
+            | '_'
+            | '+'
+            | '/'
+            | '*'
+            | '%'
+            | '>'
+            | '<'
+            | '='
+            | '?'
+            | '!'
+            | '&'
+            | '$'
+            | '.'
+            | '#'
+            | ':'
+            | 'λ'
+            | 'a'...'z'
+            | 'A'...'Z'
+            | '0'...'9' => true,
+            _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    impl Into<BufReader<char>> for String {
+        fn into(self) -> BufReader<char> {}
     }
 }

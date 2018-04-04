@@ -1,9 +1,11 @@
-pub mod value;
+mod environment;
+mod value;
 
-pub use value::*;
+pub use self::environment::*;
+pub use self::value::*;
+
 use parser::SExpr;
 use errors::*;
-use environment::Environment;
 
 pub type FuncResult = Result<Value>;
 pub type Intrinsic = fn(&mut Environment, &[Value]) -> FuncResult;
@@ -17,29 +19,29 @@ pub trait Eval {
     fn eval(&self, &mut Environment) -> Result<Value>;
 }
 
-const SUPER: &'static str = "#super:";
+const SUPER: &str = "#super:";
 const SUPER_LEN: usize = 7;
 
 impl Eval for SExpr {
     fn eval(&self, env: &mut Environment) -> Result<Value> {
-        match self {
+        match *self {
             // Primitives map directly
-            &SExpr::Num(n) => Ok(Value::Num(n)),
-            &SExpr::Bool(b) => Ok(Value::Bool(b)),
-            &SExpr::Str(ref s) => Ok(Value::Str(s.clone())),
+            SExpr::Num(n) => Ok(Value::Num(n)),
+            SExpr::Bool(b) => Ok(Value::Bool(b)),
+            SExpr::Str(ref s) => Ok(Value::Str(s.clone())),
 
             // Fetch value of identifier in context
-            &SExpr::Ident(ref s, variadic) => {
+            SExpr::Ident(ref s, _) => {
                 // Previous scope if identifier begins with "super:"
                 let index = s.find(SUPER);
                 let contains_super = match index {
                     Some(_) => true,
-                    _ => false
+                    _ => false,
                 };
 
                 let ident = match index {
                     Some(_) => &s[SUPER_LEN..],
-                    None => s
+                    None => s,
                 };
 
                 let res = if contains_super {
@@ -50,46 +52,26 @@ impl Eval for SExpr {
 
                 match res {
                     Some(val) => ok(val.clone()),
-                    None => err(unbound(ident))
+                    None => err(unbound(ident)),
                 }
             }
 
             // Evaluate first element of the list, then apply subsequent
             // elements to the first element if it is a function.
-            &SExpr::List(ref vals) => {
+            SExpr::List(ref vals) => {
                 if vals.is_empty() {
                     Ok(empty())
                 } else {
                     let func = vals[0].eval(env)?;
                     match func {
-                        Value::Func(_, _, _) => {
+                        Value::Func(..) => {
                             let mut args = Vec::<Value>::with_capacity(vals.len() - 1);
                             for param in &vals[1..] {
                                 let arg = param.eval(env)?;
                                 args.push(arg);
                             }
                             eval_func(&func, &args, env)
-
-                            // ctx.enter_scope();
-                            
-                            // let params_len = params.len();
-                            // let args_len = vals.len() - 1;
-
-                            // if params_len != args_len {
-                            //     return Err(arity_exact(params_len, args_len));
-                            // }
-
-                            // for i in 0..params.len() {
-                            //     let val = &vals[i + 1];
-                            //     let res = val.eval(ctx)?;
-                            //     ctx.define(params[i].clone(), res);
-                            // }
-
-                            
-                            // let res = expr.eval(ctx);
-                            // ctx.exit_scope();
-                            // res
-                        },
+                        }
                         Value::Intrinsic(ref func) => {
                             let mut args: Vec<Value> = vec![];
 
@@ -99,30 +81,30 @@ impl Eval for SExpr {
                             }
 
                             func(env, &args)
-                        },
-                        Value::Macro(ref func) => {
-                            func(env, vals)
                         }
-                        _ => Err(not_a_function(&func))
+                        Value::Macro(ref func) => func(env, vals),
+                        _ => Err(not_a_function(&func)),
                     }
                 }
-            },
+            }
 
             // Quoted expression
-            &SExpr::Quote(ref expr) => {
+            SExpr::Quote(ref expr) => {
                 let r = expr.as_ref().clone();
                 Ok(r.into())
             }
 
             // Nil evaluates to an empty list
-            &SExpr::Nil => Ok(empty())
+            SExpr::Nil => Ok(empty()),
         }
     }
 }
 
+/// Attempts to evaluate the specified function, given the specified arguments,
+/// in the specified environment.
 pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value> {
-    match *func {
-        Value::Func(ref params, ref body, variadic) => {
+    match func {
+        &Value::Func(ref params, ref body, variadic) => {
             env.enter_scope();
 
             let params_len = params.len();
@@ -134,10 +116,8 @@ pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<
                 if params_len - 1 > args_len {
                     return Err(arity_at_least(params_len - 1, args_len));
                 }
-            } else {
-                if params_len != args_len {
-                    return Err(arity_exact(params_len, args_len));
-                }
+            } else if params_len != args_len {
+                return Err(arity_exact(params_len, args_len));
             }
 
             if variadic {
@@ -155,7 +135,7 @@ pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<
                 } else {
                     Vec::new()
                 };
-                
+
                 env.define(params[params_len - 1].clone(), Value::List(variadic_arg));
             } else {
                 for i in 0..params_len {
@@ -164,11 +144,10 @@ pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<
                 }
             }
 
-                            
             let res = body.eval(env)?;
             env.exit_scope();
             Ok(res)
-        },
-        _ => Err(not_a_function(func))
+        }
+        _ => Err(not_a_function(func)),
     }
 }

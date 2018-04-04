@@ -43,4 +43,3 @@ pub fn not_a_bool(val: &SExpr) -> String {
 pub fn reserved_word(val: &str) -> String {
     format!("\"{}\" is a reserved word.", val)
 }
-

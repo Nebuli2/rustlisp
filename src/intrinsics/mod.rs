@@ -1,26 +1,26 @@
 use interpreter::*;
 use parser::SExpr;
 use errors::*;
-use environment::*;
+use interpreter::Environment;
 
 mod macros;
 pub mod functions;
 
 /// The name of the lisp interpreter.
-const NAME: &'static str = env!("CARGO_PKG_NAME");
+const NAME: &str = env!("CARGO_PKG_NAME");
 
 /// The version of the lisp interpreter.
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// All reserved words that may not be used as identifiers.
-const RESERVED_WORDS: [&'static str; 7] = [
+const RESERVED_WORDS: [&str; 7] = [
     "define",
     "define-struct",
     "begin",
     "cond",
     "else",
     "if",
-    "let"
+    "let",
 ];
 
 fn nil() -> Value {
@@ -28,22 +28,28 @@ fn nil() -> Value {
 }
 
 pub trait Intrinsics {
-    fn define_intrinsic<S>(&mut self, S, Intrinsic) where S: Into<String>;
+    fn define_intrinsic<S>(&mut self, S, Intrinsic)
+    where
+        S: Into<String>;
 
-    fn define_macro<S>(&mut self, S, Macro) where S: Into<String>;
+    fn define_macro<S>(&mut self, S, Macro)
+    where
+        S: Into<String>;
 
     fn init_intrinsics(&mut self);
 }
 
 impl Intrinsics for Environment {
     fn define_intrinsic<S>(&mut self, ident: S, f: Intrinsic)
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         self.define(ident, Value::Intrinsic(f));
     }
 
     fn define_macro<S>(&mut self, ident: S, f: Macro)
-        where S: Into<String>
+    where
+        S: Into<String>,
     {
         self.define(ident, Value::Macro(f));
     }
@@ -124,6 +130,7 @@ impl Intrinsics for Environment {
 
         self.define_intrinsic("include", functions::_include);
         self.define_intrinsic("read-file", functions::_read_file);
+        self.define_intrinsic("write-file", functions::_write_file);
 
         functions::load_trig_fns(self);
     }

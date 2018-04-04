@@ -3,6 +3,7 @@
 (define (empty? lst)
     (eq? (len lst) 0))
 
+;; last : [A] -> A?
 (define (last lst)
     (nth lst (- (len lst) 1)))
 
@@ -187,14 +188,13 @@
             empty))
     (repl))
 
-(define (factorial n)
-    (if (> n -1)
-        (apply * (map inc (range-to n)))
-        -1))
-
 (define (reload)
     (include "lib/main.rl"))
 
 (define (std/reload)
     (println "Reloading stdlib...")
     (include "lib/stdlib.rl"))
+
+(define (xor a b)
+    (or (and a (not b))
+        (and (not a) b)))

@@ -12,11 +12,10 @@ pub enum Value {
     Func(Vec<String>, SExpr, bool),
     Intrinsic(Intrinsic),
     Macro(Macro),
-    Struct(String, Vec<Value>)
+    Struct(String, Vec<Value>),
 }
 
 impl From<SExpr> for Value {
-
     /// Converts the specified `SExpr` into a `Value`.
     fn from(expr: SExpr) -> Value {
         match expr {
@@ -24,19 +23,16 @@ impl From<SExpr> for Value {
             SExpr::Bool(n) => Value::Bool(n),
             SExpr::Str(s) => Value::Str(s),
             SExpr::Ident(s, v) => Value::Symbol(s, v),
-            SExpr::List(vals) => Value::List(  
-                vals.into_iter()
-                    .map(|expr| Value::from(expr))
-                    .collect()
-            ),
+            SExpr::List(vals) => {
+                Value::List(vals.into_iter().map(|expr| Value::from(expr)).collect())
+            }
             SExpr::Nil => Value::List(vec![]),
-            SExpr::Quote(expr) => (*expr).into()
+            SExpr::Quote(expr) => (*expr).into(),
         }
     }
 }
 
 impl Into<SExpr> for Value {
-
     /// Converts the `Value` into an `SExpr`.
     fn into(self) -> SExpr {
         match self {
@@ -44,9 +40,7 @@ impl Into<SExpr> for Value {
             Value::Bool(n) => SExpr::Bool(n),
             Value::Str(s) => SExpr::Str(s),
             Value::Symbol(s, v) => SExpr::Ident(s, v),
-            Value::List(vals) => SExpr::List(
-                vals.into_iter().map(|expr| expr.into()).collect()
-            ),
+            Value::List(vals) => SExpr::List(vals.into_iter().map(|expr| expr.into()).collect()),
             Value::Struct(ref name, ref fields) => {
                 let mut exprs: Vec<SExpr> = Vec::with_capacity(fields.len() + 1);
                 exprs.push(SExpr::Ident(format!("make-{}", name), false));
@@ -55,13 +49,12 @@ impl Into<SExpr> for Value {
                 }
                 SExpr::List(exprs)
             }
-            _ => panic!("Evaluating other values is not yet supported.")
+            _ => panic!("Evaluating other values is not yet supported."),
         }
     }
 }
 
 impl fmt::Display for Value {
-
     /// Displays the `Value` in a human-readable format based on the type:
     /// * *num:* Displays as is.
     /// * *bool:* Displays as either `true` or `false`.
@@ -72,15 +65,15 @@ impl fmt::Display for Value {
     /// * *struct:* Displays the struct in the form: (make-{struct} fields ...)
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
-        match self {
+        match *self {
             // num
-            &Num(n) => {
+            Num(n) => {
                 let out = n;
                 write!(f, "{}", out)
-            },
+            }
 
             // #t | #f
-            &Bool(b) => if b {
+            Bool(b) => if b {
                 let out = "true";
                 write!(f, "{}", out)
             } else {
@@ -89,12 +82,10 @@ impl fmt::Display for Value {
             },
 
             // "string"
-            &Str(ref s) => {
-                write!(f, "{}", s)
-            },
+            Str(ref s) => write!(f, "{}", s),
 
             // 'symbol
-            &Symbol(ref s, v) => {
+            Symbol(ref s, v) => {
                 write!(f, "{}", s)?;
                 if v {
                     write!(f, "...")?;
@@ -103,7 +94,7 @@ impl fmt::Display for Value {
             }
 
             // (a b c ...)
-            &List(ref exps) => {
+            List(ref exps) => {
                 write!(f, "(")?;
                 let len = exps.len();
                 if len > 0 {
@@ -111,14 +102,13 @@ impl fmt::Display for Value {
                         write!(f, "{} ", &exps[i])?;
                     }
                     write!(f, "{}", &exps[len - 1])?;
-                    
                 }
                 write!(f, ")")
-            },
+            }
 
             // (lambda (params ...) body)
-            &Func(ref args, ref body, variadic) => {
-                // Write lambda 
+            Func(ref args, ref body, variadic) => {
+                // Write lambda
                 write!(f, "(lambda (")?;
 
                 // Write args
@@ -126,7 +116,7 @@ impl fmt::Display for Value {
                     for i in 0..args.len() - 1 {
                         write!(f, "{} ", &args[i])?;
                     }
-                    write!(f, "{}", &args[args.len() - 1])?;  
+                    write!(f, "{}", &args[args.len() - 1])?;
                     if variadic {
                         write!(f, "...")?;
                     }
@@ -134,20 +124,16 @@ impl fmt::Display for Value {
 
                 // Write body
                 write!(f, ") {})", body)
-            },
+            }
 
             // <function>
-            &Intrinsic(_) => {
-                write!(f, "<function>")
-            },
+            Intrinsic(_) => write!(f, "<function>"),
 
             // <procedure>
-            &Macro(_) => {
-                write!(f, "<procedure>")
-            },
+            Macro(_) => write!(f, "<procedure>"),
 
             // (make-{struct} {field1} ...)
-            &Struct(ref name, ref values) => {
+            Struct(ref name, ref values) => {
                 // Write opening bracket
                 write!(f, "(make-{}", name)?;
 
@@ -164,7 +150,6 @@ impl fmt::Display for Value {
 }
 
 impl Into<Value> for f64 {
-
     /// Converts the specified `f64` into a num `Value`.
     fn into(self) -> Value {
         Value::Num(self)
@@ -172,7 +157,6 @@ impl Into<Value> for f64 {
 }
 
 impl Into<Value> for bool {
-
     /// Converts the specified `bool` into a bool `Value`.
     fn into(self) -> Value {
         Value::Bool(self)
@@ -180,7 +164,6 @@ impl Into<Value> for bool {
 }
 
 impl Into<Value> for String {
-
     /// Converts the specified `String` into a str `Value`.
     fn into(self) -> Value {
         Value::Str(self)
@@ -188,20 +171,21 @@ impl Into<Value> for String {
 }
 
 /// Wrap the specified value in an `Ok`.
-pub fn ok<T>(val: T) -> ::std::result::Result<Value, String> 
-    where T: Into<Value> 
+pub fn ok<T>(val: T) -> ::std::result::Result<Value, String>
+where
+    T: Into<Value>,
 {
     Ok(val.into())
 }
 
 pub fn err<T>(msg: T) -> Result<Value>
-    where T: Into<String>
+where
+    T: Into<String>,
 {
     Err(msg.into())
 }
 
 impl PartialEq for Value {
-
     /// Compare the two values to one another for equality.
     fn eq(&self, other: &Value) -> bool {
         use self::Value::*;
@@ -209,9 +193,7 @@ impl PartialEq for Value {
             (&Num(a), &Num(b)) => a == b,
             (&Bool(a), &Bool(b)) => a == b,
             (&Str(ref a), &Str(ref b)) => a == b,
-            (&Symbol(ref a, a_vec), &Symbol(ref b, b_vec)) => {
-                a == b && a_vec == b_vec
-            },
+            (&Symbol(ref a, a_vec), &Symbol(ref b, b_vec)) => a == b && a_vec == b_vec,
             (&List(ref a), &List(ref b)) => {
                 if a.len() == b.len() {
                     for i in 0..a.len() {
@@ -224,12 +206,11 @@ impl PartialEq for Value {
                 } else {
                     false
                 }
-            },
-
-            (&Struct(ref a_ident, ref a_fields), &Struct(ref b_ident, ref b_fields)) => {
+            }
+            (&Struct(ref a_type, ref a_fields), &Struct(ref b_type, ref b_fields)) => {
                 let a_len = a_fields.len();
                 let b_len = b_fields.len();
-                if a_ident == b_ident && a_len == b_len {
+                if a_type == b_type && a_len == b_len {
                     for i in 0..a_len {
                         let (a, b) = (&a_fields[i], &b_fields[i]);
                         if a != b {
@@ -241,7 +222,7 @@ impl PartialEq for Value {
                     false
                 }
             }
-            _ => false
+            _ => false,
         }
     }
 }

@@ -10,11 +10,3 @@ pub fn user_name() -> String {
     }
     String::from("user")
 }
-
-pub fn option<T>(cond: bool, val: T) -> Option<T> {
-    if cond {
-        Some(val)
-    } else {
-        None
-    }
-}

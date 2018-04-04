@@ -9,7 +9,7 @@ pub enum SExpr {
     Ident(String, bool),
     List(Vec<SExpr>),
     Quote(Box<SExpr>),
-    Nil
+    Nil,
 }
 
 impl fmt::Display for SExpr {
@@ -26,7 +26,7 @@ impl fmt::Display for SExpr {
                 write!(f, "true")
             } else {
                 write!(f, "false")
-            }
+            },
 
             // ident
             Ident(ref s, variadic) => {
@@ -35,7 +35,7 @@ impl fmt::Display for SExpr {
                     write!(f, "...")?;
                 }
                 Ok(())
-            },
+            }
 
             // (a b c ...)
             List(ref exps) => {
@@ -48,15 +48,13 @@ impl fmt::Display for SExpr {
                     write!(f, "{}", &exps[len - 1])?;
                 }
                 write!(f, ")")
-            },
-
-            // 'quote
-            Quote(ref expr) => {
-                write!(f, "'{}", expr)
             }
 
+            // 'quote
+            Quote(ref expr) => write!(f, "'{}", expr),
+
             // '()
-            Nil => write!(f, "'()")
+            Nil => write!(f, "'()"),
         }
     }
 }
