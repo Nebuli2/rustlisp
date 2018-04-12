@@ -128,7 +128,7 @@ impl Intrinsics for Environment {
         self.define_intrinsic("read-line", functions::_read_line);
         self.define_intrinsic("parse", functions::_parse);
 
-        self.define_intrinsic("include", functions::_include);
+        self.define_intrinsic("import", functions::_import);
         self.define_intrinsic("read-file", functions::_read_file);
         self.define_intrinsic("write-file", functions::_write_file);
 

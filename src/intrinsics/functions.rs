@@ -718,8 +718,9 @@ fn split_str(s: &str) -> Result<Vec<StrSection>> {
     let mut i = 0 as usize;
     let mut last_ch = '\0';
     for ch in s.chars() {
+        const INTERPOLATION_CHAR: char = '$';
         match ch {
-            '{' if last_ch == '#' => {
+            '{' if last_ch == INTERPOLATION_CHAR => {
                 strs.push(Str(&s[last..i - 1]));
                 in_expr = true;
                 last = i + 1; // Begin expression after opening brace
@@ -844,7 +845,7 @@ use std::fs::File;
 
 /// `run-file : str... -> A`
 /// Opens and runs the specified file.
-pub fn _include(env: Env, args: Args) -> EvalResult {
+pub fn _import(env: Env, args: Args) -> EvalResult {
     let mut vals = Vec::<Value>::new();
 
     for arg in args {

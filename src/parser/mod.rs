@@ -137,10 +137,10 @@ impl<R: Read> Parser<R> {
 
             // Check if valid identifier
             if s.chars().all(|c| c.is_valid_ident()) {
-                let ellipsis = "...";
-                let variadic = s.ends_with(ellipsis);
+                const ELLIPSIS: &str = "...";
+                let variadic = s.ends_with(ELLIPSIS);
                 let name = if variadic {
-                    s[..s.len() - ellipsis.len()].to_string()
+                    s[..s.len() - ELLIPSIS.len()].to_string()
                 } else {
                     s
                 };

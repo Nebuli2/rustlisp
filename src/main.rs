@@ -12,17 +12,17 @@ use parser::*;
 use interpreter::*;
 use intrinsics::*;
 
-const MAIN_FILE: &str = "lib/stdlib.rl";
+const ENTRY_POINT: &str = "lib/main.rl";
 
 fn init(env: &mut Environment) -> Result<(), String> {
     // Create context
     env.init_intrinsics();
 
     // Load library
-    let main = MAIN_FILE.to_string();
-    let args = [Value::Str(main)];
+    let main = ENTRY_POINT.to_string();
+    let args = &[Value::Str(main)];
 
-    functions::_include(env, &args)?;
+    functions::_import(env, args)?;
 
     Ok(())
 }

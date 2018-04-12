@@ -118,7 +118,7 @@
 (define (nil? val)
     (if (cons? val)
         (empty? val)
-        #f))
+        false))
 
 ;; list : A... -> [A]
 ;; Wraps all arguments passed to this function in a list.
@@ -189,12 +189,15 @@
     (repl))
 
 (define (reload)
-    (include "lib/main.rl"))
+    (import "lib/main.rl"))
 
 (define (std/reload)
     (println "Reloading stdlib...")
-    (include "lib/stdlib.rl"))
+    (import "lib/stdlib.rl"))
 
 (define (xor a b)
     (or (and a (not b))
         (and (not a) b)))
+
+(define (reverse lst)
+    (foldr append empty lst))

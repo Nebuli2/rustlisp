@@ -1,10 +1,13 @@
-(define (run)
-    (println "Loading stdlib...")
-    (include "lib/stdlib.rl")
+;; Include list-ops
+(import "lib/list.rl")
 
-    (println "Loading point struct...")
-    (include "lib/point.rl")
+;; Include stdio
+(import "lib/io.rl")
 
-    (printf "Welcome to #{env/lisp-name} v#{env/lisp-version}.\n"))
+;; Include num functions
+(import "lib/num.rl")
 
-(run)
+;; Include aliases
+(import "lib/aliases.rl")
+
+(printf "Welcome to ${env/lisp-name} v${env/lisp-version}.\n")
