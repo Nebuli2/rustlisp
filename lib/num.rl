@@ -27,3 +27,14 @@
 ;; Produces the specified number decremented by 1.
 (define (dec n)
     (- n 1))
+
+;; sum : [num] -> num
+;; Produces the sum of the specified list of numbers.
+(define (sum lst)
+    (apply + lst))
+
+;; range : num num -> [num]
+;; Produces a list of numbers equal to [from, to), with a step size of 1.
+(define (range from to)
+    (cond [(> to from) (cons from (range (inc from) to))]
+          [else empty]))

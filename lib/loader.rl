@@ -10,4 +10,4 @@
 ;; Include aliases
 (import "lib/aliases.rl")
 
-(printf "Welcome to ${env/lisp-name} v${env/lisp-version}.\n")
+(import "lib/stdlib.rl")

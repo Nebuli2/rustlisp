@@ -66,11 +66,8 @@
 ;; for-each : (A -> void) [A] -> void
 ;; Executes the specified function for each element of the specified list.
 (define (for-each func lst)
-    (if (empty? lst)
-        empty
-        (begin
-            (func (first lst)
-            (for-each func (rest lst)))))) 
+    (map func lst)
+    empty)
 
 ;; reverse: [A] -> [A]
 ;; Produces a reversed copy of the specified list.

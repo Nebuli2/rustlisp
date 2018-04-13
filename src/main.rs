@@ -12,7 +12,9 @@ use parser::*;
 use interpreter::*;
 use intrinsics::*;
 
-const ENTRY_POINT: &str = "lib/main.rl";
+use std::env::args;
+
+const ENTRY_POINT: &str = "lib/loader.rl";
 
 fn init(env: &mut Environment) -> Result<(), String> {
     // Create context
@@ -39,7 +41,19 @@ fn main() {
     let mut env = Environment::default();
 
     init(&mut env)
-        .map(|_| repl::run(&mut env))
+        .and_then(|_| {
+            let arg_list: Vec<_> = args().skip(1).collect();
+            // println!("{:?}", arg_list);
+            if arg_list.is_empty() {
+                let args = [Value::Str("lib/repl.rl".to_string())];
+                functions::_import(&mut env, &args)?;
+                repl::run(&mut env);
+                Ok(())
+            } else {
+                let arg_list: Vec<_> = arg_list.into_iter().map(|arg| Value::Str(arg)).collect();
+                functions::_import(&mut env, &arg_list).map(|_| ())
+            }
+        })
         .unwrap_or_else(|err| {
             print_err(err);
             print_err("Could not load standard library.");
