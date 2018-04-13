@@ -1,5 +1,8 @@
 extern crate ansi_term;
 
+extern crate clap;
+use clap::{App, Arg};
+
 mod parser;
 mod interpreter;
 mod intrinsics;
@@ -11,8 +14,6 @@ mod repl;
 use parser::*;
 use interpreter::*;
 use intrinsics::*;
-
-use std::env::args;
 
 const ENTRY_POINT: &str = "lib/loader.rl";
 
@@ -40,19 +41,32 @@ where
 fn main() {
     let mut env = Environment::default();
 
+    let matches = App::new("RLisp")
+        .version("1.0")
+        .author("Benjamin Hetherington <b.w.hetherington@gmail.com>")
+        .about("The RLisp language")
+        .arg(Arg::with_name("interactive")
+            .short("i")
+            .long("config")
+            .help("Toggles interactive mode"))
+        .arg(Arg::with_name("INPUT")
+            .help("Sets the input file to use")
+            .required(false)
+            .index(1))
+        .get_matches();
+
+    let file_specified = matches.is_present("INPUT");
+    let interactive = !file_specified || matches.is_present("interactive");
+    let input = matches.value_of("INPUT").unwrap_or("lib/repl.rl");
+
     init(&mut env)
         .and_then(|_| {
-            let arg_list: Vec<_> = args().skip(1).collect();
-            // println!("{:?}", arg_list);
-            if arg_list.is_empty() {
-                let args = [Value::Str("lib/repl.rl".to_string())];
-                functions::_import(&mut env, &args)?;
+            let args = [Value::Str(input.to_string())];
+            functions::_import(&mut env, &args)?;
+            if interactive {
                 repl::run(&mut env);
-                Ok(())
-            } else {
-                let arg_list: Vec<_> = arg_list.into_iter().map(|arg| Value::Str(arg)).collect();
-                functions::_import(&mut env, &arg_list).map(|_| ())
             }
+            Ok(())
         })
         .unwrap_or_else(|err| {
             print_err(err);

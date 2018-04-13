@@ -8,10 +8,3 @@
     (if (not pred)
         (last body)
         empty))
-
-(define (check-sanity)
-    (unless (pos? -5)
-        (println "hi")
-        (println "there")))
-
-(check-sanity)
