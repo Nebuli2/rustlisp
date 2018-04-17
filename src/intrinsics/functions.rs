@@ -642,7 +642,7 @@ pub fn _apply(env: Env, args: Args) -> EvalResult {
 
     let (func, args) = (&args[0], &args[1]);
     match (func, args) {
-        (&Func(..), &List(ref list)) => eval_func(func, list, env),
+        (&Func(..), &List(ref list)) => eval_func(SExpr::Nil, func, list, env),
         (&Intrinsic(func), &List(ref list)) => func(env, list),
         _ => Err(format!("Contract not satisfied: {} {}.", func, args)),
     }
@@ -760,7 +760,7 @@ fn format_str(env: Env, sections: &[StrSection]) -> EvalResult {
 
                 // Get contents
                 let expr = parser.parse()?;
-                env.enter_scope();
+                env.enter_scope(expr.clone());
                 let res = expr.eval(env)?;
                 env.exit_scope();
                 let res = format!("{}", res);

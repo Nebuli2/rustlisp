@@ -31,20 +31,23 @@
 ;; map : (A -> B) [A] -> [B]
 ;; Maps the specified function to the specified list, producing a list
 ;; containing the mapped results.
-(define (map func lst)
-    (if (empty? lst)
-        lst
-        (cons 
-            (func (car lst))
-            (map func (cdr lst)))))
+(define (map f lst)
+    (foldr (lambda [el to] (cons (f el) to)) empty lst))
+    
+; (define (map func lst)
+;     (if (empty? lst)
+;         lst
+;         (cons 
+;             (func (car lst))
+;             (map func (cdr lst)))))
 
 ;; flatmap : (A -> [B]) [A] -> [B]
-(define (flatmap func lst)
+(define (flat-map func lst)
     (if (empty? lst)
         lst
-        (append
+        (prepend-list
             (func (car lst))
-            (flatmap func (cdr lst)))))
+            (flat-map func (cdr lst)))))
 
 (define (list-to n)
     (if (eq? n 0)
@@ -69,7 +72,15 @@
     (map func lst)
     empty)
 
-;; reverse: [A] -> [A]
+;; reverse : [A] -> [A]
 ;; Produces a reversed copy of the specified list.
 (define (reverse lst)
     (foldr append empty lst))
+
+;; append-list : [A] [A] -> [A]
+(define (append-list lst to)
+    (foldr append to (reverse lst)))
+
+;; prepend-list : [A] [A] -> [A]
+(define (prepend-list lst to)
+    (foldr cons to lst))

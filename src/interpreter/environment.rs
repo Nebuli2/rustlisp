@@ -1,7 +1,13 @@
 use std::collections::HashMap;
+use std::slice::Iter;
 use super::Value;
+use parser::SExpr;
 
-type Scope = HashMap<String, Value>;
+pub struct Scope {
+    pub caller: SExpr,
+    pub mapping: HashMap<String, Value>,
+}
+
 type StructFields = Vec<String>;
 
 pub trait FieldIndex {
@@ -29,11 +35,14 @@ pub struct Environment {
 impl Default for Environment {
     fn default() -> Self {
         let mut env = Environment {
-            base: HashMap::new(),
+            base: Scope {
+                caller: SExpr::Nil,
+                mapping: HashMap::new(),
+            },
             stack: vec![],
             structs: HashMap::new(),
         };
-        env.enter_scope();
+        env.enter_scope(SExpr::Nil);
         env
     }
 }
@@ -41,6 +50,10 @@ impl Default for Environment {
 impl Environment {
     pub fn structs(&self) -> &HashMap<String, StructFields> {
         &self.structs
+    }
+
+    pub fn scope_iter(&self) -> Iter<Scope> {
+        self.stack.iter()
     }
 
     pub fn structs_mut(&mut self) -> &mut HashMap<String, StructFields> {
@@ -79,8 +92,11 @@ impl Environment {
         &mut self.stack[len - 1]
     }
 
-    pub fn enter_scope(&mut self) {
-        self.stack.push(HashMap::new())
+    pub fn enter_scope(&mut self, caller: SExpr) {
+        self.stack.push(Scope {
+            caller: caller,
+            mapping: HashMap::new(),
+        });
     }
 
     pub fn exit_scope(&mut self) {
@@ -94,7 +110,7 @@ impl Environment {
         K: Into<String>,
     {
         let scope = self.cur_scope_mut();
-        scope.insert(key.into(), value);
+        scope.mapping.insert(key.into(), value);
     }
 
     pub fn get<K>(&self, key: K) -> Option<&Value>
@@ -102,7 +118,7 @@ impl Environment {
         K: AsRef<str>,
     {
         for scope in self.stack.iter().rev() {
-            if let Some(value) = scope.get(key.as_ref()) {
+            if let Some(value) = scope.mapping.get(key.as_ref()) {
                 return Some(value);
             }
         }
@@ -117,13 +133,13 @@ impl Environment {
         let len = self.stack.len();
         if len > 1 {
             for scope in (&self.stack[..len - 1]).iter().rev() {
-                if let Some(value) = scope.get(key) {
+                if let Some(value) = scope.mapping.get(key) {
                     return Some(value);
                 }
             }
             None
         } else {
-            self.base.get(key)
+            self.base.mapping.get(key)
         }
     }
 }

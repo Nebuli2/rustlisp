@@ -1,7 +1,7 @@
 use std::fmt;
 use self::SExpr::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SExpr {
     Str(String),
     Num(f64),

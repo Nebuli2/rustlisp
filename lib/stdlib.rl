@@ -1,10 +1,10 @@
 
 (define (when pred body...)
     (if pred 
-        (last body)
+        (apply begin body)
         empty))
 
 (define (unless pred body...)
     (if (not pred)
-        (last body)
+        (apply begin body)
         empty))

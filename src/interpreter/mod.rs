@@ -70,7 +70,7 @@ impl Eval for SExpr {
                                 let arg = param.eval(env)?;
                                 args.push(arg);
                             }
-                            eval_func(&func, &args, env)
+                            eval_func(self.clone(), &func, &args, env)
                         }
                         Value::Intrinsic(ref func) => {
                             let mut args: Vec<Value> = vec![];
@@ -96,16 +96,30 @@ impl Eval for SExpr {
 
             // Nil evaluates to an empty list
             SExpr::Nil => Ok(empty()),
-        }
+        }.map_err(|why| {
+            let mut s = format!("Evaluating {}.", self);
+            for scope in env.scope_iter() {
+                if scope.caller != SExpr::Nil {
+                    s.push_str("\n  ");
+                    s.push_str(&scope.caller.to_string());
+                }
+            }
+            format!("{}\n{}", s, why)
+        })
     }
 }
 
 /// Attempts to evaluate the specified function, given the specified arguments,
 /// in the specified environment.
-pub fn eval_func(func: &Value, args: &[Value], env: &mut Environment) -> Result<Value> {
+pub fn eval_func(
+    caller: SExpr,
+    func: &Value,
+    args: &[Value],
+    env: &mut Environment,
+) -> Result<Value> {
     match func {
         &Value::Func(ref params, ref body, variadic) => {
-            env.enter_scope();
+            env.enter_scope(caller);
 
             let params_len = params.len();
             let args_len = args.len();

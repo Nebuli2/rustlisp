@@ -143,7 +143,7 @@ pub fn _if(env: Env, exprs: Exprs) -> Output {
 /// next expression is checked, etc.
 pub fn _cond(env: Env, exprs: Exprs) -> Output {
     let conditions = &exprs[1..];
-    env.enter_scope();
+    env.enter_scope(SExpr::List(exprs.to_vec()));
     env.define("else", Value::Bool(true));
     for condition in conditions.iter() {
         match condition {
@@ -192,7 +192,7 @@ pub fn _let(env: Env, exprs: Exprs) -> Output {
     let args = (&exprs[1], &exprs[2]);
     match args {
         (&List(ref bindings), body) => {
-            env.enter_scope();
+            env.enter_scope(SExpr::List(exprs.to_vec()));
             for expr in bindings.iter() {
                 match *expr {
                     List(ref binding) => {

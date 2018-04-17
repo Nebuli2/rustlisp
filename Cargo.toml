@@ -1,5 +1,5 @@
 [package]
-name = "rustlisp"
+name = "rlisp"
 version = "0.1.0"
 authors = ["Benjamin Hetherington <b.w.hetherington@gmail.com>"]
 
