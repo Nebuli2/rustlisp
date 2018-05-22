@@ -65,49 +65,57 @@ impl fmt::Display for Value {
     /// * *struct:* Displays the struct in the form: (make-{struct} fields ...)
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
-        match *self {
+        use color::*;
+        match self {
             // num
             Num(n) => {
-                let out = n;
-                write!(f, "{}", out)
+                let out = n.to_string();
+                write!(f, "{}", number(out))
             }
 
             // #t | #f
-            Bool(b) => if b {
+            Bool(b) => if *b {
                 let out = "true";
-                write!(f, "{}", out)
+                write!(f, "{}", boolean(out))
             } else {
                 let out = "false";
-                write!(f, "{}", out)
+                write!(f, "{}", boolean(out))
             },
 
             // "string"
-            Str(ref s) => write!(f, "{}", s),
+            Str(s) => {
+                let out = format!("\"{}\"", s);
+                write!(f, "{}", string(out))
+            }
 
             // 'symbol
-            Symbol(ref s, v) => {
+            Symbol(s, v) => {
                 write!(f, "{}", s)?;
-                if v {
+                if *v {
                     write!(f, "...")?;
                 }
                 Ok(())
             }
 
             // (a b c ...)
-            List(ref exps) => {
-                write!(f, "(")?;
-                let len = exps.len();
-                if len > 0 {
-                    for i in 0..len - 1 {
-                        write!(f, "{} ", &exps[i])?;
+            List(exps) => {
+                if !exps.is_empty() {
+                    write!(f, "(")?;
+                    let len = exps.len();
+                    if len > 0 {
+                        for i in 0..len - 1 {
+                            write!(f, "{} ", &exps[i])?;
+                        }
+                        write!(f, "{}", &exps[len - 1])?;
                     }
-                    write!(f, "{}", &exps[len - 1])?;
+                    write!(f, ")")
+                } else {
+                    Ok(())
                 }
-                write!(f, ")")
             }
 
             // (lambda (params ...) body)
-            Func(ref args, ref body, variadic) => {
+            Func(args, body, variadic) => {
                 // Write lambda
                 write!(f, "(lambda (")?;
 
@@ -117,7 +125,7 @@ impl fmt::Display for Value {
                         write!(f, "{} ", &args[i])?;
                     }
                     write!(f, "{}", &args[args.len() - 1])?;
-                    if variadic {
+                    if *variadic {
                         write!(f, "...")?;
                     }
                 }
@@ -133,7 +141,7 @@ impl fmt::Display for Value {
             Macro(_) => write!(f, "<procedure>"),
 
             // (make-{struct} {field1} ...)
-            Struct(ref name, ref values) => {
+            Struct(name, values) => {
                 // Write opening bracket
                 write!(f, "(make-{}", name)?;
 
@@ -170,17 +178,26 @@ impl Into<Value> for String {
     }
 }
 
+use err::RLError;
+use errors::Result;
+
 /// Wrap the specified value in an `Ok`.
-pub fn ok<T>(val: T) -> ::std::result::Result<Value, String>
+pub fn ok<T>(val: T) -> Result<Value>
 where
     T: Into<Value>,
 {
     Ok(val.into())
 }
 
+impl Into<Value> for Vec<Value> {
+    fn into(self) -> Value {
+        Value::List(self)
+    }
+}
+
 pub fn err<T>(msg: T) -> Result<Value>
 where
-    T: Into<String>,
+    T: Into<RLError>,
 {
     Err(msg.into())
 }

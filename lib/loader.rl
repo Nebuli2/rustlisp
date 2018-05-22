@@ -1,13 +1,13 @@
 ;; Include list-ops
-(import "lib/list.rl")
+(import "list.rl")
 
 ;; Include stdio
-(import "lib/io.rl")
+(import "io.rl")
 
 ;; Include num functions
-(import "lib/num.rl")
+(import "num.rl")
 
 ;; Include aliases
-(import "lib/aliases.rl")
+(import "aliases.rl")
 
-(import "lib/stdlib.rl")
+(import "stdlib.rl")

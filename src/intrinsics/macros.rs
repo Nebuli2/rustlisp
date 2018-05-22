@@ -20,7 +20,7 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
         let (ident, val) = (&exprs[1], &exprs[2]);
         match ident {
             // Define variable
-            &Ident(ref s, _) => {
+            Ident(s, _) => {
                 if len == 3 {
                     if RESERVED_WORDS.contains(&s.as_str()) {
                         Err(reserved_word(s))
@@ -40,10 +40,10 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
             // Into:
             //  (define func-name (lambda (param1 ...) (begin statements ...)))
             // If more than 3 args are passed in the original define, wrap last ones in a "begin".
-            &List(ref vals) => {
+            List(vals) => {
                 let vals_len = vals.len();
                 if vals_len == 0 {
-                    Err(format!("Cannot redefine empty list."))
+                    err(format!("Cannot redefine empty list."))
                 } else {
                     let ident = (&vals[0]).clone();
                     let params: Vec<_> = (&vals[1..]).iter().map(|expr| expr.clone()).collect();
@@ -68,10 +68,10 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
                     define.eval(env)
                 }
             }
-            _ => Err(not_an_identifier(ident)),
+            _ => err(not_an_identifier(ident)),
         }
     } else {
-        Err(arity_at_least(2, len - 1))
+        err(arity_at_least(2, len - 1))
     }
 }
 
@@ -79,12 +79,12 @@ pub fn _define(env: Env, exprs: Exprs) -> Output {
 pub fn _lambda(_: Env, exprs: Exprs) -> Output {
     let len = exprs.len();
     if len != 3 {
-        return Err(arity_exact(2, len - 1));
+        return err(arity_exact(2, len - 1));
     }
 
     let (params, body) = (&exprs[1], &exprs[2]);
     match params {
-        &List(ref params) => {
+        List(params) => {
             let len = params.len();
             let mut names = Vec::<String>::with_capacity(len);
             for (i, param) in params.iter().enumerate() {
@@ -109,7 +109,7 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
             };
             Ok(Value::Func(names, body.clone(), variadic))
         }
-        _ => Err(not_a_list(params)),
+        _ => err(not_a_list(params)),
     }
 }
 
@@ -120,13 +120,13 @@ pub fn _lambda(_: Env, exprs: Exprs) -> Output {
 pub fn _if(env: Env, exprs: Exprs) -> Output {
     let len = exprs.len();
     if len != 4 {
-        return Err(arity_exact(3, len - 1));
+        return err(arity_exact(3, len - 1));
     }
 
     let (cond, then, other) = (&exprs[1], &exprs[2], &exprs[3]);
     let cond = match cond.eval(env)? {
         Value::Bool(cond) => cond,
-        _ => return Err(not_a_bool(&cond)),
+        _ => return err(not_a_bool(&cond)),
     };
 
     if cond {
@@ -147,7 +147,7 @@ pub fn _cond(env: Env, exprs: Exprs) -> Output {
     env.define("else", Value::Bool(true));
     for condition in conditions.iter() {
         match condition {
-            &List(ref vals) => {
+            List(vals) => {
                 let len = vals.len();
                 match len {
                     2 => {
@@ -159,18 +159,18 @@ pub fn _cond(env: Env, exprs: Exprs) -> Output {
                             }
                         } else {
                             env.exit_scope();
-                            return Err(format!("{} is not a bool.", condition));
+                            return err(format!("{} is not a bool.", condition));
                         }
                     }
                     n => {
                         env.exit_scope();
-                        return Err(arity_exact(2, n));
+                        return err(arity_exact(2, n));
                     }
                 }
             }
             _ => {
                 env.exit_scope();
-                return Err(not_a_list(condition));
+                return err(not_a_list(condition));
             }
         }
     }
@@ -191,7 +191,7 @@ pub fn _let(env: Env, exprs: Exprs) -> Output {
 
     let args = (&exprs[1], &exprs[2]);
     match args {
-        (&List(ref bindings), body) => {
+        (List(bindings), body) => {
             env.enter_scope(SExpr::List(exprs.to_vec()));
             for expr in bindings.iter() {
                 match *expr {
@@ -236,7 +236,7 @@ pub fn _define_struct(env: Env, exprs: Exprs) -> Output {
     } else {
         let (struct_name, struct_def) = (&exprs[1], &exprs[2]);
         match (struct_name, struct_def) {
-            (&Ident(ref name, _), &List(ref vals)) => {
+            (Ident(name, _), List(vals)) => {
                 let len = vals.len();
                 if len < 1 {
                     Err(arity_exact(1, len))

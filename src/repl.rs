@@ -19,7 +19,9 @@ fn parse_line<S: AsRef<str>>(line: S) -> Result<Vec<SExpr>, String> {
 }
 
 pub fn print_prompt<S: AsRef<str>>(prompt: S) -> io::Result<()> {
-    print!("{}", color::prompt(prompt.as_ref()));
+    // print!("{}", color::prompt(prompt.as_ref()));
+    // print!("{} ", color::carrot(">"));
+    print!("> ");
     io::stdout().flush()
 }
 
@@ -45,7 +47,7 @@ fn eval_exprs(env: &mut Environment, exprs: &[SExpr]) {
 
 /// Runs a REPL for the specified environment.
 pub fn run(env: &mut Environment) {
-    let prompt = format!("{}> ", user_name());
+    let prompt = format!("{}", user_name());
     loop {
         print_prompt(&prompt).expect("Failed to print prompt.");
         if let Ok(line) = read_input_line() {

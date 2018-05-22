@@ -24,7 +24,7 @@ pub fn _exit(_: Env, args: Args) -> EvalResult {
         1 => {
             let code = &args[0];
             match code {
-                &Num(n) => n as i32,
+                Num(n) => *n as i32,
                 _ => return Err(not_a_number(code)),
             }
         }
@@ -39,7 +39,7 @@ pub fn _exit(_: Env, args: Args) -> EvalResult {
 pub fn _print(env: Env, args: Args) -> EvalResult {
     let out = _concat(env, args)?;
     match out {
-        Str(ref s) => {
+        Str(s) => {
             print!("{}", s);
             stdout().flush().expect("Failed to flush stdout.");
             ok(nil())
@@ -54,7 +54,7 @@ pub fn _print(env: Env, args: Args) -> EvalResult {
 pub fn _println(env: Env, args: Args) -> EvalResult {
     let out = _concat(env, args)?;
     match out {
-        Str(ref s) => {
+        Str(s) => {
             println!("{}", s);
             ok(nil())
         }
@@ -82,7 +82,7 @@ pub fn _add(_: Env, args: Args) -> EvalResult {
     let mut sum = 0.0;
     for arg in args.iter() {
         match arg {
-            &Num(num) => sum += num,
+            Num(num) => sum += num,
             _ => return Err(not_a_number(arg)),
         }
     }
@@ -105,7 +105,7 @@ pub fn _sub(_: Env, args: Args) -> EvalResult {
                     let mut acc = n;
                     for arg in &args[1..] {
                         match arg {
-                            &Num(num) => acc -= num,
+                            Num(num) => acc -= num,
                             _ => return Err(not_a_number(arg)),
                         }
                     }
@@ -126,7 +126,7 @@ pub fn _mul(_: Env, args: Args) -> EvalResult {
     let mut prod = 1.0;
     for arg in args.iter() {
         match arg {
-            &Num(num) => prod *= num,
+            Num(num) => prod *= num,
             _ => return Err(not_a_number(arg)),
         }
     }
@@ -148,7 +148,7 @@ pub fn _div(_: Env, args: Args) -> EvalResult {
                 } else {
                     let mut acc = n;
                     for arg in &args[1..] {
-                        match *arg {
+                        match arg {
                             Num(num) => acc /= num,
                             _ => return Err(not_a_number(arg)),
                         }
@@ -208,32 +208,24 @@ pub fn _pow(_: Env, args: Args) -> EvalResult {
 /// Converts a slice of values and a function taking one `f64` into a
 /// `Result<Value, String`. It checks that the number of arguments is equal to
 /// one.
-fn unary_fn<F>(args: Args, f: F) -> EvalResult
-where
-    F: Fn(f64) -> f64,
-{
+fn unary_fn(args: Args, f: impl Fn(f64) -> f64) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match arg {
-        &Num(x) => ok(f(x)),
-        _ => err(not_a_number(arg)),
+    match &args[0] {
+        Num(x) => ok(f(*x)),
+        arg => err(not_a_number(arg)),
     }
 }
 
 /// Converts a slice of values and a function taking two `f64`s into a
 /// `Result<Value, String`. It checks that the number of arguments is equal to
 /// two.
-fn binary_fn<F>(args: Args, f: F) -> EvalResult
-where
-    F: Fn(f64, f64) -> f64,
-{
+fn binary_fn(args: Args, f: impl Fn(f64, f64) -> f64) -> EvalResult {
     check_arity(2, args.len())?;
 
-    let (u, v) = (&args[0], &args[1]);
-    match (u, v) {
+    match (&args[0], &args[1]) {
         (&Num(u), &Num(v)) => ok(f(u, v)),
-        _ => err(format!("Expected (num num), found ({} {}).", u, v)),
+        (u, v) => err(format!("Expected (num num), found ({} {}).", u, v)),
     }
 }
 
@@ -327,8 +319,7 @@ pub fn load_trig_fns(env: Env) {
 pub fn _is_num(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Num(_) => ok(true),
         _ => ok(false),
     }
@@ -340,8 +331,7 @@ pub fn _is_num(_: Env, args: Args) -> EvalResult {
 pub fn _is_bool(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Bool(_) => ok(true),
         _ => ok(false),
     }
@@ -353,8 +343,7 @@ pub fn _is_bool(_: Env, args: Args) -> EvalResult {
 pub fn _is_str(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Str(_) => ok(true),
         _ => ok(false),
     }
@@ -366,8 +355,7 @@ pub fn _is_str(_: Env, args: Args) -> EvalResult {
 pub fn _is_symbol(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Symbol(..) => ok(true),
         _ => ok(false),
     }
@@ -379,8 +367,7 @@ pub fn _is_symbol(_: Env, args: Args) -> EvalResult {
 pub fn _is_cons(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         List(_) => ok(true),
         _ => ok(false),
     }
@@ -392,8 +379,7 @@ pub fn _is_cons(_: Env, args: Args) -> EvalResult {
 pub fn _is_lambda(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Intrinsic(_) => ok(true),
         Func(..) => ok(true),
         _ => ok(false),
@@ -413,7 +399,7 @@ pub fn load_checks(env: Env) {
 ///
 /// Wraps all specified values in a list.
 pub fn _list(_: Env, args: Args) -> EvalResult {
-    Ok(List(Vec::from(args)))
+    ok(Vec::from(args))
 }
 
 /// `cons : A [A] -> [A]`
@@ -423,9 +409,8 @@ pub fn _list(_: Env, args: Args) -> EvalResult {
 pub fn _cons(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
-    let (car, cdr) = (&args[0], &args[1]);
-    match (car, cdr) {
-        (_, &List(ref vals)) => {
+    match (&args[0], &args[1]) {
+        (car, List(vals)) => {
             let old_len = vals.len();
             let mut new_list = Vec::<Value>::with_capacity(old_len + 1);
             new_list.push(car.clone());
@@ -434,9 +419,9 @@ pub fn _cons(_: Env, args: Args) -> EvalResult {
                 new_list.push(value.clone());
             }
 
-            Ok(List(new_list))
+            ok(new_list)
         }
-        _ => Err(format!("{} is not a list.", car)),
+        (car, _) => err(format!("{} is not a list.", car)),
     }
 }
 
@@ -446,17 +431,16 @@ pub fn _cons(_: Env, args: Args) -> EvalResult {
 pub fn _car(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let list = &args[0];
-    match *list {
-        List(ref vals) => {
+    match &args[0] {
+        List(vals) => {
             let len = vals.len();
             if len == 0 {
-                Err(format!("Cannot call car on an empty list."))
+                err(format!("Cannot call car on an empty list."))
             } else {
                 ok(vals[0].clone())
             }
         }
-        _ => Err(format!("{} is not a list.", list)),
+        list => err(format!("{} is not a list.", list)),
     }
 }
 
@@ -466,12 +450,11 @@ pub fn _car(_: Env, args: Args) -> EvalResult {
 pub fn _cdr(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let list = &args[0];
-    match *list {
-        List(ref vals) => {
+    match &args[0] {
+        List(vals) => {
             let len = vals.len();
             if len == 0 {
-                Err(format!("Cannot call cdr on an empty list."))
+                err(format!("Cannot call cdr on an empty list."))
             } else {
                 let rest = &vals[1..];
                 let mut new_list = Vec::<Value>::with_capacity(len - 1);
@@ -479,10 +462,10 @@ pub fn _cdr(_: Env, args: Args) -> EvalResult {
                     new_list.push(value.clone());
                 }
 
-                Ok(List(new_list))
+                ok(new_list)
             }
         }
-        _ => Err(format!("{} is not a list.", list)),
+        list => err(format!("{} is not a list.", list)),
     }
 }
 
@@ -491,11 +474,9 @@ pub fn _cdr(_: Env, args: Args) -> EvalResult {
 /// Determines the length of the specified list.
 pub fn _len(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
-
-    let list = &args[0];
-    match *list {
-        List(ref vals) => ok(vals.len() as f64),
-        _ => Err(format!("{} is not a list.", list)),
+    match &args[0] {
+        List(vals) => ok(vals.len() as f64),
+        list => err(format!("{} is not a list.", list)),
     }
 }
 
@@ -505,16 +486,15 @@ pub fn _len(_: Env, args: Args) -> EvalResult {
 pub fn _nth(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
-    let (list, index) = (&args[0], &args[1]);
-    match (list, index) {
-        (&List(ref vals), &Num(num)) => {
+    match (&args[0], &args[1]) {
+        (List(vals), Num(num)) => {
             if vals.is_empty() {
                 return ok(nil());
             }
 
-            let index = num as usize;
+            let index = *num as usize;
             let check = index as f64;
-            if check != num {
+            if *num != check {
                 return err("List index must be an integer.");
             }
 
@@ -534,7 +514,7 @@ pub fn _append(_: Env, args: Args) -> EvalResult {
             buf.push(value.clone());
             Ok(List(buf))
         }
-        (_, list) => Err(format!("{} is not a list.", list)),
+        (_, list) => err(format!("{} is not a list.", list)),
     }
 }
 
@@ -548,7 +528,7 @@ pub fn _is_l(_: Env, args: Args) -> EvalResult {
     let (a, b) = (&args[0], &args[1]);
     cmp(a, b)
         .map(|dif| Value::Bool(dif < 0.0))
-        .ok_or(format!("Cannot compare {} to {}.", a, b))
+        .ok_or_else(|| format!("Cannot compare {} to {}.", a, b).into())
 }
 
 /// `<= : num num -> bool`
@@ -561,7 +541,7 @@ pub fn _is_le(_: Env, args: Args) -> EvalResult {
     let (a, b) = (&args[0], &args[1]);
     cmp(a, b)
         .map(|dif| Value::Bool(dif <= 0.0))
-        .ok_or(format!("Cannot compare {} to {}.", a, b))
+        .ok_or_else(|| format!("Cannot compare {} to {}.", a, b).into())
 }
 
 /// `> : num num -> bool`
@@ -574,7 +554,7 @@ pub fn _is_g(_: Env, args: Args) -> EvalResult {
     let (a, b) = (&args[0], &args[1]);
     cmp(a, b)
         .map(|dif| Value::Bool(dif > 0.0))
-        .ok_or(format!("Cannot compare {} to {}.", a, b))
+        .ok_or_else(|| format!("Cannot compare {} to {}.", a, b).into())
 }
 
 /// `>= : num num -> bool`
@@ -587,7 +567,7 @@ pub fn _is_ge(_: Env, args: Args) -> EvalResult {
     let (a, b) = (&args[0], &args[1]);
     cmp(a, b)
         .map(|dif| Value::Bool(dif >= 0.0))
-        .ok_or(format!("Cannot compare {} to {}.", a, b))
+        .ok_or_else(|| format!("Cannot compare {} to {}.", a, b).into())
 }
 
 /// `eq? : A A -> bool`
@@ -606,11 +586,11 @@ pub fn _is_eq(_: Env, args: Args) -> EvalResult {
 /// Produces the logical `or` of all the specified boolean values.
 pub fn _or(_: Env, args: Args) -> EvalResult {
     for arg in args {
-        match *arg {
-            Bool(b) => if b {
+        match arg {
+            Bool(b) => if *b {
                 return ok(true);
             },
-            _ => return err(format!("{} is not a bool.", arg)),
+            arg => return err(format!("{} is not a bool.", arg)),
         }
     }
 
@@ -622,11 +602,11 @@ pub fn _or(_: Env, args: Args) -> EvalResult {
 /// Produces the logical `and` of all the specified boolean values.
 pub fn _and(_: Env, args: Args) -> EvalResult {
     for arg in args {
-        match *arg {
+        match arg {
             Bool(b) => if !b {
                 return ok(false);
             },
-            _ => return err(format!("{} is not a bool.", arg)),
+            arg => return err(format!("{} is not a bool.", arg)),
         }
     }
 
@@ -640,11 +620,10 @@ pub fn _and(_: Env, args: Args) -> EvalResult {
 pub fn _apply(env: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
-    let (func, args) = (&args[0], &args[1]);
-    match (func, args) {
-        (&Func(..), &List(ref list)) => eval_func(SExpr::Nil, func, list, env),
-        (&Intrinsic(func), &List(ref list)) => func(env, list),
-        _ => Err(format!("Contract not satisfied: {} {}.", func, args)),
+    match (&args[0], &args[1]) {
+        (Func(..), List(list)) => eval_func(SExpr::Nil, &args[0], list, env),
+        (Intrinsic(func), List(list)) => func(env, list),
+        (func, args) => err(format!("Contract not satisfied: {} {}.", func, args)),
     }
 }
 
@@ -654,10 +633,9 @@ pub fn _apply(env: Env, args: Args) -> EvalResult {
 pub fn _not(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    match *arg {
+    match &args[0] {
         Bool(b) => ok(!b),
-        _ => Err(format!("{} is not a bool.", arg)),
+        arg => err(format!("{} is not a bool.", arg)),
     }
 }
 
@@ -712,7 +690,6 @@ enum StrSection<'a> {
 fn split_str(s: &str) -> Result<Vec<StrSection>> {
     use self::StrSection::*;
     let mut strs = Vec::new();
-
     let mut in_expr = false;
     let mut last = 0 as usize;
     let mut i = 0 as usize;
@@ -740,7 +717,7 @@ fn split_str(s: &str) -> Result<Vec<StrSection>> {
     }
 
     if in_expr {
-        Err("Unclosed expression while interpolating string.".to_string())
+        Err("Unclosed expression while interpolating string.".into())
     } else {
         Ok(strs)
     }
@@ -752,7 +729,7 @@ fn format_str(env: Env, sections: &[StrSection]) -> EvalResult {
     let mut buf = String::new();
 
     for section in sections {
-        match *section {
+        match section {
             Str(s) => buf.push_str(s),
             Expr(s) => {
                 let reader = BufReader::new(s.as_bytes());
@@ -775,15 +752,14 @@ fn format_str(env: Env, sections: &[StrSection]) -> EvalResult {
 pub fn _format(env: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let format = &args[0];
-    match *format {
-        Str(ref s) => {
+    match &args[0] {
+        Str(s) => {
             let sections = split_str(s)?;
             let formatted = format_str(env, &sections)?;
 
             ok(formatted)
         }
-        _ => err(format!("{} is not a str.", format)),
+        format => err(format!("{} is not a str.", format)),
     }
 }
 
@@ -802,9 +778,8 @@ pub fn _read_line(_: Env, args: Args) -> EvalResult {
 pub fn _parse(env: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let input = &args[0];
-    match *input {
-        Str(ref s) => {
+    match &args[0] {
+        Str(s) => {
             let s = format!("'{}", s);
             let bytes = s.as_bytes();
             let mut parser = Parser::new(BufReader::new(bytes));
@@ -815,7 +790,7 @@ pub fn _parse(env: Env, args: Args) -> EvalResult {
             ok(val)
         }
 
-        _ => err(format!("{} is not a str.", input)),
+        input => err(format!("{} is not a str.", input)),
     }
 }
 
@@ -829,15 +804,14 @@ fn fib(n: u64) -> u64 {
 pub fn _fib_rust(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let n = &args[0];
-    match *n {
+    match &args[0] {
         Num(n) => {
-            let n = n as u64;
+            let n = *n as u64;
             let res = fib(n);
             let res = res as f64;
             ok(res)
         }
-        _ => err(not_a_number(n)),
+        n => err(not_a_number(n)),
     }
 }
 
@@ -849,8 +823,9 @@ pub fn _import(env: Env, args: Args) -> EvalResult {
     let mut vals = Vec::<Value>::new();
 
     for arg in args {
-        if let Str(ref file_name) = *arg {
-            if let Ok(file) = File::open(file_name) {
+        match arg {
+            Str(file_name) => {
+                let file = File::open(file_name)?;
                 let reader = BufReader::new(file);
                 let mut parser = Parser::new(reader);
                 let exprs = parser.parse_all()?;
@@ -860,11 +835,8 @@ pub fn _import(env: Env, args: Args) -> EvalResult {
                 let expr = SExpr::List(list);
                 let res = expr.eval(env)?;
                 vals.push(res);
-            } else {
-                return err(format!("Could not open file {}.", file_name));
             }
-        } else {
-            return err(format!("{} is not a str.", arg));
+            arg => return err(format!("{} is not a str.", arg)),
         }
     }
 
@@ -876,20 +848,19 @@ use std::io::prelude::*;
 pub fn _read_file(_: Env, args: Args) -> EvalResult {
     check_arity(1, args.len())?;
 
-    let arg = &args[0];
-    if let Str(ref path) = *arg {
-        // Open file
-        let mut file = File::open(path).map_err(|_| format!("Could not open file {}.", path))?;
+    match &args[0] {
+        Str(path) => {
+            // Open file
+            let mut file = File::open(path)?;
 
-        // Read file to buffer
-        let mut contents = String::from("(begin ");
-        file.read_to_string(&mut contents)
-            .map_err(|_| format!("Could not read file {}.", path))?;
-        contents.push(')');
+            // Read file to buffer
+            let mut contents = String::from("(begin ");
+            file.read_to_string(&mut contents)?;
+            contents.push(')');
 
-        Ok(Str(contents))
-    } else {
-        Err(format!("{} is not a str.", arg))
+            ok(contents)
+        }
+        arg => err(format!("{} is not a str.", arg)),
     }
 }
 
@@ -899,20 +870,64 @@ pub fn _read_file(_: Env, args: Args) -> EvalResult {
 pub fn _write_file(_: Env, args: Args) -> EvalResult {
     check_arity(2, args.len())?;
 
-    let (file, data) = (&args[0], &args[1]);
-    match (file, data) {
-        (&Str(ref path), data) => {
-            let mut file =
-                File::create(path).map_err(|_| format!("Could not create file {}.", path))?;
+    match (&args[0], &args[1]) {
+        (Str(path), data) => {
+            let mut file = File::create(path)?;
             let data_str = data.to_string();
             let data_bytes = data_str.as_bytes();
-            file.write(data_bytes)
-                .map_err(|_| format!("Could not write to file {}.", path))?;
+            file.write(data_bytes)?;
             Ok(nil())
         }
-        _ => Err(format!(
+        (file, data) => err(format!(
             "Contract not satisfied. Expected str str, found {} {}.",
             file, data
         )),
+    }
+}
+
+fn symbol<S: Into<String>>(s: S) -> Value {
+    let s = s.into();
+    Value::Symbol(s, false)
+}
+
+fn type_of(val: &Value) -> String {
+    match val {
+        Num(_) => "number",
+        Bool(_) => "bool",
+        Str(_) => "string",
+        Symbol(_, _) => "symbol",
+        List(_) => "list",
+        Func(_, _, _) => "function",
+        Intrinsic(_) => "function",
+        Macro(_) => "function",
+        Struct(struct_type, _) => struct_type,
+    }.to_string()
+}
+
+/// `type-of : A -> symbol`
+///
+/// Produces a symbol representing the type of the specified value.
+pub fn _type_of(_: Env, args: Args) -> EvalResult {
+    check_arity(1, args.len())?;
+
+    args.first()
+        .map(type_of)
+        .map(symbol)
+        .ok_or_else(|| format!("Unknown type.").into())
+}
+
+// String functions
+
+/// `substring : string num num -> string`
+pub fn _substring(_: Env, args: Args) -> EvalResult {
+    check_arity(3, args.len())?;
+
+    match (&args[0], &args[1], &args[2]) {
+        (Str(string), Num(start), Num(end)) => ok(string
+            .chars()
+            .skip(*start as usize)
+            .take((end - start - 1.0) as usize)
+            .collect::<String>()),
+        _ => err(format!("Contract not satisfied.")),
     }
 }

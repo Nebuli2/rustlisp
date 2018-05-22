@@ -4,6 +4,7 @@ use std::io::{BufReader, Read};
 
 // Export SExpr.
 pub use sexpr::*;
+use SExpr::*;
 
 pub struct Parser<R: Read> {
     stack: Vec<char>,
@@ -14,10 +15,32 @@ type ParseResult = Result<SExpr, String>;
 
 impl<R: Read> Parser<R> {
     pub fn new(reader: BufReader<R>) -> Self {
-        Parser {
+        let mut parser = Parser {
             stack: vec![],
             reader,
+        };
+
+        // Ignore a shebang if present
+        let mut beginning: [u8; 2] = [0, 0];
+        match parser.reader.read(&mut beginning) {
+            Ok(n) if n == 2 => {
+                let (c1, c2) = (beginning[0] as char, beginning[1] as char);
+                if c1 == '#' && c2 == '!' {
+                    // Shebang
+                    parser.skip_to_linebreak();
+                } else {
+                    parser.undo_char(c2 as char);
+                    parser.undo_char(c1 as char);
+                }
+            }
+            Ok(n) if n == 1 => {
+                let c = beginning[0];
+                parser.undo_char(c as char);
+            }
+            _ => (),
         }
+
+        parser
     }
 
     pub fn parse_all(&mut self) -> Result<Vec<SExpr>, String> {
@@ -56,10 +79,10 @@ impl<R: Read> Parser<R> {
         self.skip_whitespace();
 
         self.next_char()
-            .ok_or("EOF".to_string())
+            .ok_or_else(|| "EOF".to_string())
             .and_then(|c| match c {
                 // Comment
-                ';' => {
+                ';' | '#' => {
                     self.skip_to_linebreak();
                     self.parse()
                 }
@@ -79,6 +102,9 @@ impl<R: Read> Parser<R> {
 
                 // String
                 '"' => self.parse_str(),
+
+                // Formatted string
+                '`' => self.parse_fmt_str(),
 
                 // Atom
                 _ => {
@@ -157,6 +183,34 @@ impl<R: Read> Parser<R> {
         }
     }
 
+    fn parse_fmt_str(&mut self) -> ParseResult {
+        let mut buf = String::new();
+
+        loop {
+            match self.next_char() {
+                Some(c) if c == '`' => break,
+                Some(c) if c == '\\' => {
+                    if let Some(c) = self.next_char() {
+                        let escape = match c {
+                            'n' => '\n',
+                            'r' => '\r',
+                            't' => '\t',
+                            '\"' => '\"',
+                            '0' => '\0',
+                            '\\' => '\\',
+                            c => return Err(format!("Unknown escape character '\\{}'.", c)),
+                        };
+                        buf.push(escape);
+                    }
+                }
+                Some(c) => buf.push(c),
+                None => return Err("Unexpected EOF before end of string.".to_string()),
+            }
+        }
+
+        Ok(List(vec![Ident("format".to_string(), false), Str(buf)]))
+    }
+
     /// Attempts to parse the next string from the `Parser`'s reader.
     fn parse_str(&mut self) -> ParseResult {
         let mut buf = String::new();
@@ -192,7 +246,7 @@ impl<R: Read> Parser<R> {
             }
         }
 
-        Ok(SExpr::Str(buf))
+        Ok(Str(buf))
     }
 
     /// Attempts to parse the next list from the `Parser`'s reader.
@@ -214,7 +268,7 @@ impl<R: Read> Parser<R> {
             }
         }
 
-        Ok(SExpr::List(buf))
+        Ok(List(buf))
     }
 
     /// Attempts to produce the next `char` in the `Parser`'s reader. If the

@@ -34,7 +34,7 @@ pub struct Environment {
 
 impl Default for Environment {
     fn default() -> Self {
-        let mut env = Environment {
+        let mut env = Self {
             base: Scope {
                 caller: SExpr::Nil,
                 mapping: HashMap::new(),

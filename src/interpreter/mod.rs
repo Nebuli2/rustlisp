@@ -4,8 +4,8 @@ mod value;
 pub use self::environment::*;
 pub use self::value::*;
 
-use parser::SExpr;
 use errors::*;
+use parser::SExpr;
 
 pub type FuncResult = Result<Value>;
 pub type Intrinsic = fn(&mut Environment, &[Value]) -> FuncResult;
@@ -104,7 +104,7 @@ impl Eval for SExpr {
                     s.push_str(&scope.caller.to_string());
                 }
             }
-            format!("{}\n{}", s, why)
+            format!("{}\n{}", s, why).into()
         })
     }
 }

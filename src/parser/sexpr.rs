@@ -1,5 +1,5 @@
-use std::fmt;
 use self::SExpr::*;
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SExpr {
@@ -14,31 +14,31 @@ pub enum SExpr {
 
 impl fmt::Display for SExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
+        match self {
             // "string"
-            Str(ref s) => write!(f, "\"{}\"", s),
+            Str(s) => write!(f, "\"{}\"", s),
 
             // num
             Num(n) => write!(f, "{}", n),
 
             // #t | #f
-            Bool(b) => if b {
+            Bool(b) => if *b {
                 write!(f, "true")
             } else {
                 write!(f, "false")
             },
 
             // ident
-            Ident(ref s, variadic) => {
+            Ident(s, variadic) => {
                 write!(f, "{}", s)?;
-                if variadic {
+                if *variadic {
                     write!(f, "...")?;
                 }
                 Ok(())
             }
 
             // (a b c ...)
-            List(ref exps) => {
+            List(exps) => {
                 write!(f, "(")?;
                 let len = exps.len();
                 if len > 0 {

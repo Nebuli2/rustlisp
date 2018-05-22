@@ -1,45 +1,48 @@
+#![allow(unknown_lints)]
+#![warn(clippy)]
+
 extern crate ansi_term;
 
 extern crate clap;
 use clap::{App, Arg};
 
-mod parser;
+mod color;
+mod err;
+mod errors;
 mod interpreter;
 mod intrinsics;
-mod errors;
-mod utils;
-mod color;
+mod parser;
 mod repl;
+mod utils;
 
-use parser::*;
+use err::*;
 use interpreter::*;
 use intrinsics::*;
+use parser::*;
+
+use std::env;
 
 const ENTRY_POINT: &str = "loader.rl";
 
-fn init(env: &mut Environment, lib: &str) -> Result<(), String> {
+fn init(lisp_env: &mut Environment, lib: &str) -> Result<(), RLError> {
+    let prev = env::current_dir()?;
+
+    // Set directory to library
+    env::set_current_dir(lib)?;
+
     // Create context
-    env.init_intrinsics();
+    lisp_env.init_intrinsics();
 
-    // Load library
-    let lib = if lib.ends_with("/") {
-        lib.to_string()
-    } else {
-        format!("{}/", lib)
-    };
-    let main = format!("{}{}", lib, ENTRY_POINT);
-    println!("Main: {}", main);
-    let args = &[Value::Str(main)];
+    let args = [Value::Str(ENTRY_POINT.to_string())];
+    functions::_import(lisp_env, &args)?;
 
-    functions::_import(env, args)?;
+    // Reset the directory
+    env::set_current_dir(prev)?;
 
     Ok(())
 }
 
-fn print_err<S>(msg: S)
-where
-    S: AsRef<str>,
-{
+fn print_err(msg: impl AsRef<str>) {
     let err = format!("ERROR:\n{}", msg.as_ref());
     println!("{}", color::err(err));
 }
@@ -71,31 +74,28 @@ fn match_args<'a>() -> clap::ArgMatches<'a> {
         .get_matches()
 }
 
-fn main() {
-    let mut env = Environment::default();
+use std::error::Error;
 
+fn main() -> Result<(), Box<Error>> {
+    let mut lisp_env = Environment::default();
     let matches = match_args();
-
     let file_specified = matches.is_present("INPUT");
     let interactive = !file_specified || matches.is_present("interactive");
-    let input = matches.value_of("INPUT").unwrap_or("lib/repl.rl");
+    let input = matches.value_of("INPUT");
     let lib = matches
         .value_of("LIB_LOC")
         .unwrap_or("/Users/bwh/rust-workspace/rust-lisp/lib/");
 
-    println!("{:?}", matches);
+    init(&mut lisp_env, lib)?;
 
-    init(&mut env, lib)
-        .and_then(|_| {
-            let args = [Value::Str(input.to_string())];
-            functions::_import(&mut env, &args)?;
-            if interactive {
-                repl::run(&mut env);
-            }
-            Ok(())
-        })
-        .unwrap_or_else(|err| {
-            print_err(err);
-            print_err("Could not load standard library.");
-        });
+    if let Some(input) = input {
+        let args = [Value::Str(input.to_string())];
+        functions::_import(&mut lisp_env, &args)?;
+    }
+
+    if interactive {
+        repl::run(&mut lisp_env);
+    }
+
+    Ok(())
 }

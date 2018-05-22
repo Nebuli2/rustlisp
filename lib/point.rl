@@ -1,4 +1,4 @@
-;; point : [x:num y:num]
+;; Point : [x:num y:num]
 ;; A point stores an x and a y-coordinate.
 (define-struct point [x y])
 

@@ -1,1 +1,1 @@
-(printf "Welcome to ${env/lisp-name} v${env/lisp-version}.\n")
+(println `Welcome to ${env/lisp-name} v${env/lisp-version}.`)

@@ -132,6 +132,9 @@ impl Intrinsics for Environment {
         self.define_intrinsic("read-file", functions::_read_file);
         self.define_intrinsic("write-file", functions::_write_file);
 
+        self.define_intrinsic("type-of", functions::_type_of);
+        self.define_intrinsic("substring", functions::_substring);
+
         functions::load_trig_fns(self);
     }
 }

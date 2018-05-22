@@ -33,13 +33,6 @@
 ;; containing the mapped results.
 (define (map f lst)
     (foldr (lambda [el to] (cons (f el) to)) empty lst))
-    
-; (define (map func lst)
-;     (if (empty? lst)
-;         lst
-;         (cons 
-;             (func (car lst))
-;             (map func (cdr lst)))))
 
 ;; flatmap : (A -> [B]) [A] -> [B]
 (define (flat-map func lst)
@@ -84,3 +77,12 @@
 ;; prepend-list : [A] [A] -> [A]
 (define (prepend-list lst to)
     (foldr cons to lst))
+
+;; skip : num [A] -> [A]
+(define (skip n lst)
+    (if (eq? n 0)
+        lst
+        (skip (- n 1) (cdr lst))))
+
+(define (reduce func lst)
+    (foldr func (first lst) (rest lst)))
